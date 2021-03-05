@@ -5,7 +5,7 @@ module TuringMachine
   ) where
 
 import           Data.Function (on)
-import           Tape          (Movement, Symbol, Tape, get, move, write)
+import           Tape          (Movement, Symbol, Tape, move, value, write)
 
 newtype TMState s = TMState { state :: s }
 newtype Transition s a = Transition {
@@ -16,8 +16,8 @@ instance (Eq s) => Eq (TMState s) where
   (==) = (==) `on` state
 
 machine :: (Eq s) => Transition s a -> TMState s -> [TMState s] -> Tape a -> Maybe (Tape a)
-machine t s finals tape
-  | s `elem` finals = Just tape
+machine t st finals tape
+  | st `elem` finals = Just tape
   | otherwise       = do
-    (s', o, d) <- runTransition t (s, get tape)
-    machine t s' finals (move d $ write o tape)
+    (st', out, dir) <- runTransition t (st, value tape)
+    machine t st' finals (move dir $ write out tape)

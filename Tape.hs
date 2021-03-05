@@ -4,7 +4,7 @@ module Tape
   , Symbol(..)
   , fromList
   , toList
-  , get
+  , value
   , write
   , move
   ) where
@@ -29,11 +29,9 @@ fromList :: [a] -> Tape a
 fromList = fromList' empty
 
 fromList' :: Tape a -> [a] -> Tape a
-fromList' prev []     = Cell Blank prev empty
-fromList' prev (x:xs) = h
-  where
-    h = Cell (Symbol x) prev next
-    next = fromList' h xs
+fromList' l []     = Cell Blank l empty
+fromList' l (x:xs) = h
+  where h = Cell{ value = Symbol x, left = l, right = fromList' h xs }
 
 toList :: Tape a -> [a]
 toList (Cell Blank _ _)         = []
@@ -41,9 +39,9 @@ toList (Cell (Symbol x) _ next) = x : toList next
 
 ----------------------------------------------- TAPE ACTIONS
 move :: Movement -> Tape a -> Tape a
-move MStay  tape             = tape
-move MLeft  (Cell _ left _)  = left
-move MRight (Cell _ _ right) = right
+move MStay  = id
+move MLeft  = left
+move MRight = right
 
 write :: Symbol a -> Tape a -> Tape a
 write symbol (Cell _ l r) = head
@@ -51,6 +49,3 @@ write symbol (Cell _ l r) = head
     head = Cell symbol prev next
     prev = l{ right = head }
     next = r{ left = head }
-
-get :: Tape a -> Symbol a
-get = value
