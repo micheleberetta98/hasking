@@ -18,6 +18,6 @@ instance (Eq s) => Eq (TMState s) where
 machine :: (Eq s) => Transition s a -> TMState s -> [TMState s] -> Tape a -> Maybe (Tape a)
 machine t st finals tape
   | st `elem` finals = Just tape
-  | otherwise       = do
+  | otherwise        = do
     (st', out, dir) <- runTransition t (st, value tape)
     machine t st' finals (move dir $ write out tape)

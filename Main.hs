@@ -11,8 +11,9 @@ main = do
   let
     tape :: Tape Int
     tape = fromList [0, 1, 0, 1]
-    tape' = machine t (TMState 'A') [TMState 'C'] tape
-  print (toList <$> tape')
+    result = machine t (TMState 'A') [TMState 'C'] tape
+  print (toList <$> result)
+  print (result >> Just "OK")
 
 t :: Transition Char Int
 t = Transition t'
