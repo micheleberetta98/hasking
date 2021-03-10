@@ -9,7 +9,9 @@ module Tape
   , move
   ) where
 
------------------------------------------------ DATA
+-----------------------------------------------
+-- Data declarations
+-----------------------------------------------
 -- | Represents a Symbol, which can be the control symbol `Blank` or user defined data
 data Symbol a = Blank | Symbol a deriving (Show, Eq)
 
@@ -22,9 +24,11 @@ data Tape a = Cell
   deriving (Show)
 
 -- | Represents movement (`L` = left, `R` = right, `S` = stay)
-data Direction = L | R | S
+data Direction = L | R | S deriving (Show)
 
------------------------------------------------ TAPE CONVERSIONS
+-----------------------------------------------
+-- Tape conversions
+-----------------------------------------------
 -- | A tape consisting only of `Blank`
 empty :: Tape a
 empty = Cell Blank empty empty
@@ -43,7 +47,9 @@ toList :: Tape a -> [a]
 toList (Cell Blank _ _)         = []
 toList (Cell (Symbol x) _ next) = x : toList next
 
------------------------------------------------ TAPE ACTIONS
+-----------------------------------------------
+-- Tape actions
+-----------------------------------------------
 -- | Move the `Tape` in a specified direction
 move :: Direction -> Tape a -> Tape a
 move S = id
