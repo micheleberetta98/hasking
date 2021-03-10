@@ -1,6 +1,6 @@
 module Tape
   ( Tape
-  , Movement(..)
+  , Direction(..)
   , Symbol(..)
   , fromList
   , toList
@@ -10,8 +10,10 @@ module Tape
   ) where
 
 ----------------------------------------------- DATA
+-- | Represents a Symbol, which can be the control symbol `Blank` or user defined data
 data Symbol a = Blank | Symbol a deriving (Show, Eq)
 
+-- | An infinite Tape of Symbols of type `a`, which can be moved either *left* or *right*
 data Tape a = Cell
     { value :: Symbol a
     , left  :: Tape a
@@ -19,12 +21,15 @@ data Tape a = Cell
     }
   deriving (Show)
 
-data Movement = L | R | S
+-- | Represents movement (`L` = left, `R` = right, `S` = stay)
+data Direction = L | R | S
 
 ----------------------------------------------- TAPE CONVERSIONS
+-- | A tape consisting only of `Blank`
 empty :: Tape a
 empty = Cell Blank empty empty
 
+-- | Converts a list into a `Tape`
 fromList :: [a] -> Tape a
 fromList = fromList' empty
 
@@ -33,16 +38,19 @@ fromList' l []     = Cell Blank l empty
 fromList' l (x:xs) = h
   where h = Cell{ value = Symbol x, left = l, right = fromList' h xs }
 
+-- | Converts a `Tape` into a list (it only traverses the tape right)
 toList :: Tape a -> [a]
 toList (Cell Blank _ _)         = []
 toList (Cell (Symbol x) _ next) = x : toList next
 
 ----------------------------------------------- TAPE ACTIONS
-move :: Movement -> Tape a -> Tape a
+-- | Move the `Tape` in a specified direction
+move :: Direction -> Tape a -> Tape a
 move S = id
 move L = left
 move R = right
 
+-- | Writes a symbol to the `Tape`
 write :: Symbol a -> Tape a -> Tape a
 write symbol (Cell _ l r) = head
   where

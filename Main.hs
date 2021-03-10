@@ -1,13 +1,11 @@
 module Main where
 
-import           Tape          (Movement (..), Symbol (..), Tape, fromList,
-                                toList)
+import           Tape          (Direction (..), Symbol (..), fromList, toList)
 import           TuringMachine (State (..), Transition (..), machine)
 
 main :: IO ()
 main = do
   let
-    tape :: Tape Int
     tape = fromList [0, 1, 0, 1]
     result = machine t (State 'A') [State 'C'] tape
   print (toList <$> result)
