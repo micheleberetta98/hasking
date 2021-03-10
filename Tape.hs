@@ -19,7 +19,7 @@ data Tape a = Cell
     }
   deriving (Show)
 
-data Movement = MLeft | MRight | MStay
+data Movement = L | R | S
 
 ----------------------------------------------- TAPE CONVERSIONS
 empty :: Tape a
@@ -39,9 +39,9 @@ toList (Cell (Symbol x) _ next) = x : toList next
 
 ----------------------------------------------- TAPE ACTIONS
 move :: Movement -> Tape a -> Tape a
-move MStay  = id
-move MLeft  = left
-move MRight = right
+move S = id
+move L = left
+move R = right
 
 write :: Symbol a -> Tape a -> Tape a
 write symbol (Cell _ l r) = head
