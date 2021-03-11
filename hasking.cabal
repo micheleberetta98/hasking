@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8170d39be5af143817e443b1f5f47b64dc54bfdb3af4a4f776d2ee6c137e32e3
+-- hash: aefdc1f4e1e60bc8461161d7d4dedd2badcb2d7844f37c72ab8cf23aae4bd106
 
 name:           hasking
 version:        0.1.0.0
@@ -54,6 +54,8 @@ test-suite hasking-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      TapeSpec
+      TuringMachineSpec
       Paths_hasking
   hs-source-dirs:
       test
@@ -61,4 +63,5 @@ test-suite hasking-test
   build-depends:
       base >=4.7 && <5
     , hasking
+    , hspec
   default-language: Haskell2010

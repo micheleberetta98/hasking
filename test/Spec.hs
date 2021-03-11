@@ -1,2 +1,9 @@
+import           Test.Hspec
+
+import           TapeSpec          (tapeTests)
+import           TuringMachineSpec (turingMachineTests)
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = hspec $ do
+  tapeTests
+  turingMachineTests
