@@ -1,23 +1,33 @@
 module Main where
 
-import           Tape          (Direction (..), Symbol (..), fromList, toList)
-import           TuringMachine (State (..), Transitions, buildTransitions,
-                                machine)
+import           Code
+import           Control.Monad
+import           System.Directory
+import           System.Environment
+import           System.IO
+import           Tape
+import           TuringMachine
 
 main :: IO ()
 main = do
-  let
-    tape = fromList [0, 1, 0, 1]
-    result = machine t (State "A") [State "C"] tape
-  print (toList <$> result)
-  print (result >> Just "OK")
+  fname <- getArgs >>= validateArgs
+  unless (null fname) $ do
+    readFile fname >>= runMachine
 
-t :: Transitions Int
-t = buildTransitions
-  [ ((State "A", Symbol 0), (State "A", Symbol 1, R))
-  , ((State "A", Blank   ), (State "B", Blank,    L))
-  , ((State "B", Blank   ), (State "C", Blank,    R))
-  , ((State "B", Symbol 0), (State "B", Symbol 0, L))
-  , ((State "B", Symbol 1), (State "B", Symbol 1, L))
-  ]
+validateArgs :: [String] -> IO FilePath
+validateArgs []        = putStrLn "Missing filename (first argument)" >> return ""
+validateArgs (fname:_) = do
+  ok <- doesFileExist fname
+  if ok
+    then return fname
+    else putStrLn ("No such file: `" ++ fname ++ "`") >> return ""
+
+runMachine :: String -> IO ()
+runMachine code = do
+  case parseCode code of
+    Nothing                                 -> putStrLn "Error parsing the code"
+    Just (MachineCode ts start finish tape) -> do
+      let result = machine ts start finish tape
+      print (toList <$> result)
+
 

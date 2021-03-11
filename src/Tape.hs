@@ -7,6 +7,7 @@ module Tape
   , value
   , write
   , move
+  , empty
   ) where
 
 -----------------------------------------------
@@ -21,7 +22,7 @@ data Tape a = Cell
     , left  :: Tape a
     , right :: Tape a
     }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | Represents movement (`L` = left, `R` = right, `S` = stay)
 data Direction = L | R | S deriving (Show, Eq)

@@ -1,0 +1,7 @@
+{0 0 0 0}
+[BEGIN s]
+[FINAL q]
+(s 0 s 1 R)
+(s . x . L)
+(x 1 x 1 L)
+(x . q . R)

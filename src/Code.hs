@@ -7,6 +7,8 @@ import           Data.List     (foldl')
 import qualified Data.Map      as M
 import           Instruction
 import           Parser
+import           Tape          (Tape, fromList)
+import qualified Tape          as T
 import           TuringMachine
 
 ------------------------------------------------
@@ -20,6 +22,7 @@ data MachineCode a = MachineCode
   { transitions  :: Transitions a
   , initialState :: State
   , finalStates  :: StateList
+  , initialTape  :: Tape String
   } deriving (Show, Eq)
 
 ------------------------------------------------
@@ -28,7 +31,7 @@ data MachineCode a = MachineCode
 
 -- | An empty `MachineCode` structure
 empty :: (Ord a) => MachineCode a
-empty = MachineCode M.empty (State "") []
+empty = MachineCode M.empty (State "") [] T.empty
 
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Nothing` if something goes wrong
@@ -47,6 +50,8 @@ updateCode (Just c) (Just s@(Control "BEGIN" state)) =
   Just $ c{ initialState = head state }
 updateCode (Just c) (Just s@(Control "FINAL" states)) =
   Just $ c{ finalStates = states }
+updateCode (Just c) (Just s@(TapeValue tape)) =
+  Just $ c{ initialTape = fromList tape }
 
 -- | It converts a `Step` instruction into a tuple made of `FromState` and `ToState`
 convertStep :: Instruction -> (FromState String, ToState String)

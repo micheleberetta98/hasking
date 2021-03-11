@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b1c4a3ccc5fcd1f1ca42834ac7c104edab58d4e01e5e1971a924187a26ede365
+-- hash: 22d18a76c4f6164756dc4061748c6be0008fdafef5e98f87282bdf9662366e1f
 
 name:           hasking
 version:        0.1.0.0
@@ -39,6 +39,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , directory
   default-language: Haskell2010
 
 executable hasking-exe
@@ -51,6 +52,7 @@ executable hasking-exe
   build-depends:
       base >=4.7 && <5
     , containers
+    , directory
     , hasking
   default-language: Haskell2010
 
@@ -70,6 +72,7 @@ test-suite hasking-test
   build-depends:
       base >=4.7 && <5
     , containers
+    , directory
     , hasking
     , hspec
   default-language: Haskell2010

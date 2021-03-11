@@ -5,6 +5,7 @@ import           Parser
 import           Test.Hspec
 
 
+instructionTests :: SpecWith ()
 instructionTests = describe "Instruction" $ do
   it "should parse correct steps" $ do
     let
@@ -57,3 +58,16 @@ instructionTests = describe "Instruction" $ do
     i4 `shouldBe` Nothing
     i5 `shouldBe` Nothing
     i6 `shouldBe` Nothing
+
+  it "should parse correct tapes" $ do
+    let
+      Just t1 = parseInstruction "{0 0 2}"
+      Just t2 = parseInstruction "{a b c}"
+      Just t3 = parseInstruction "{  s   }"
+
+    print t1
+
+    show t1 `shouldBe` "{0 0 2}"
+    show t2 `shouldBe` "{a b c}"
+    show t3 `shouldBe` "{s}"
+

@@ -11,7 +11,8 @@ import           Data.Functor        (($>))
 import           Parser              (Parser (runParser), alphaString, atom,
                                       char, direction, identifier, integer,
                                       oneOrMore, spaces, spaces1, zeroOrMore)
-import           Tape                (Direction, Symbol (..))
+import           Tape                (Direction, Symbol (..), Tape, fromList,
+                                      toList)
 import           TuringMachine
 
 ------------------------------------------------
@@ -39,6 +40,7 @@ data Instruction =
     { command :: String
     , value   :: [State]
     }
+  | TapeValue [String]
   deriving (Eq)
 
 ------------------------------------------------
@@ -60,7 +62,7 @@ valueSymbol (Value s) = s
 -- parseInstruction :: String -> Instruction
 parseInstruction :: String -> Maybe Instruction
 parseInstruction s =
-  case runParser (parseStep <|> parseControl) s of
+  case runParser (parseStep <|> parseControl <|> parseTape) s of
     Just (i, "") -> Just i
     _            -> Nothing
 
@@ -86,6 +88,11 @@ parseControl = delimiter '[' *> control <* delimiter ']'
     values = (:) <$> stateWithSpaces <*> zeroOrMore stateWithSpaces
     stateWithSpaces = spaces *> parseState <* spaces
 
+-- | Parses the initial value of the tape, namely `{Symbol Symbol ...}`
+parseTape :: Parser Instruction
+parseTape = delimiter '{' *> tape <* delimiter '}'
+  where tape = TapeValue <$> oneOrMore (spaces *> atom <* spaces)
+
 -- | Parses a delimiter - a start or a stop sequence
 delimiter :: Char -> Parser Char
 delimiter c = spaces *> char c <* spaces
@@ -97,9 +104,11 @@ parseState = State <$> identifier
 -- | Parses a value
 parseValue :: Parser Value
 parseValue = Value <$> parseSymbol
-  where
-    parseSymbol = parseBlank <|> (Symbol <$> atom)
-    parseBlank = char '.' $> Blank
+
+-- | Parses a symbol
+parseSymbol :: Parser (Symbol String)
+parseSymbol = parseBlank <|> (Symbol <$> atom)
+  where parseBlank = char '.' $> Blank
 
 ------------------------------------------------
 -- Instances
@@ -115,3 +124,4 @@ instance Show Value where
 instance Show Instruction where
   show (Step s1 v1 s2 v2 d) = "(" ++ unwords [show s1, show v1, show s2, show v2, show d] ++ ")"
   show (Control name value) = "[" ++ unwords (name : map show value) ++ "]"
+  show (TapeValue tape)     = "{" ++ unwords tape ++ "}"
