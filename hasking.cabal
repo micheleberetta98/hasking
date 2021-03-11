@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0e1b0ed0bc68b1bdf900f8475a9aaaa4bb94185252025063053db66d47f3ea87
+-- hash: 42e8b077a94453d352aed0a08e6d31c0363c3ff2d95dd0ff61cc0818494a222c
 
 name:           hasking
 version:        0.1.0.0
@@ -15,6 +15,7 @@ author:         Author name here
 maintainer:     example@example.com
 copyright:      2021 Author name here
 license:        BSD3
+license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md

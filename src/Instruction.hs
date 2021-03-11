@@ -1,10 +1,11 @@
 module Instruction (parseInstruction) where
 
 import           Control.Applicative (Alternative ((<|>)))
+import           Data.Functor        (($>))
 import           Parser              (Parser, alphaString, char, direction,
                                       identifier, integer, oneOrMore, spaces,
-                                      spaces', zeroOrMore)
-import           Tape                (Direction, Symbol (Symbol))
+                                      spaces1, zeroOrMore)
+import           Tape                (Direction, Symbol (..))
 
 ------------------------------------------------
 -- Instructions and its types
@@ -13,7 +14,7 @@ import           Tape                (Direction, Symbol (Symbol))
 -- | A `StateId` is an identifier (string)
 newtype StateId = StateId String deriving (Eq)
 
--- | A `Value` is an integer (could be used as input/output)
+-- | A `Value` is an input/output on the tape (integer or string)
 data Value = IValue (Symbol Int) | SValue (Symbol String) deriving (Eq)
 
 -- | An expression for the turing machine is given by
@@ -50,10 +51,10 @@ parseStep :: Parser Instruction
 parseStep = delimiter '(' *> instruction <* delimiter ')'
   where
     instruction = Step
-      <$> parseStateId <* spaces'
-      <*> parseValue <* spaces'
-      <*> parseStateId <* spaces'
-      <*> parseValue <* spaces'
+      <$> parseStateId <* spaces1
+      <*> parseValue <* spaces1
+      <*> parseStateId <* spaces1
+      <*> parseValue <* spaces1
       <*> direction
 
 -- | Parses a control sequence in the form `[NAME s1 s2 s3 ...]`
@@ -61,7 +62,7 @@ parseControl :: Parser Instruction
 parseControl = delimiter '[' *> control <* delimiter ']'
   where
     control = Control
-      <$> alphaString <* spaces'
+      <$> alphaString <* spaces1
       <*> values
 
     values = (:) <$> stateIdWithSpaces <*> zeroOrMore stateIdWithSpaces
@@ -79,8 +80,11 @@ parseStateId = StateId <$> identifier
 parseValue :: Parser Value
 parseValue = parseSValue <|> parseIValue
   where
-    parseSValue = SValue . Symbol <$> identifier
-    parseIValue = IValue . Symbol <$> integer
+    parseSValue = SValue <$> parseSymbol identifier
+    parseIValue = IValue <$> parseSymbol integer
+
+    parseSymbol contentParser = parseBlank <|> (Symbol <$> contentParser)
+    parseBlank = char '.' $> Blank
 
 ------------------------------------------------
 -- Instances
@@ -92,6 +96,8 @@ instance Show StateId where
 instance Show Value where
   show (IValue (Symbol i)) = show i
   show (SValue (Symbol s)) = s
+  show (SValue Blank)      = "."
+  show (IValue Blank )     = "."
 
 instance Show Instruction where
   show (Step s1 v1 s2 v2 d) = "(" ++ unwords [show s1, show v1, show s2, show v2, show d] ++ ")"

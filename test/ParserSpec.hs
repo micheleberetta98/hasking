@@ -36,9 +36,9 @@ parserTests = describe "Parser" $ do
     runParser spaces "" `shouldBe` Just ("", "")
     runParser spaces "   x" `shouldBe` Just ("   ", "x")
     runParser spaces "x" `shouldBe` Just("", "x")
-    runParser spaces' "" `shouldBe` Nothing
-    runParser spaces' "   x" `shouldBe` Just ("   ", "x")
-    runParser spaces' "x" `shouldBe` Nothing
+    runParser spaces1 "" `shouldBe` Nothing
+    runParser spaces1 "   x" `shouldBe` Just ("   ", "x")
+    runParser spaces1 "x" `shouldBe` Nothing
 
   it "should parse pure strings" $ do
     runParser alphaString "BEGIN" `shouldBe` Just ("BEGIN", "")
@@ -50,9 +50,9 @@ parserTests = describe "Parser" $ do
     runParser identifier "123state,xyz" `shouldBe` Nothing
 
   it "should combine neatly" $ do
-    runParser (identifier <|> spaces') "k123.." `shouldBe` Just ("k123", "..")
-    runParser (identifier <|> spaces') "   k123.." `shouldBe` Just ("   ", "k123..")
-    runParser (identifier <|> spaces') "12465" `shouldBe` Nothing
+    runParser (identifier <|> spaces1) "k123.." `shouldBe` Just ("k123", "..")
+    runParser (identifier <|> spaces1) "   k123.." `shouldBe` Just ("   ", "k123..")
+    runParser (identifier <|> spaces1) "12465" `shouldBe` Nothing
 
     runParser (spaces *> identifier <* spaces) "   k123   " `shouldBe` Just ("k123", "")
     runParser (spaces *> identifier <* spaces) "k123" `shouldBe` Just ("k123", "")

@@ -4,7 +4,7 @@ module Parser
   , integer
   , direction
   , spaces
-  , spaces'
+  , spaces1
   , alphaString
   , identifier
   , zeroOrMore
@@ -68,8 +68,8 @@ spaces :: Parser String
 spaces = zeroOrMore (satisfy isSpace)
 
 -- | Parses a series of one or more spaces
-spaces' :: Parser String
-spaces' = oneOrMore (satisfy isSpace)
+spaces1 :: Parser String
+spaces1 = oneOrMore (satisfy isSpace)
 
 -- | Parses a series of alphabetic characters
 alphaString :: Parser String
