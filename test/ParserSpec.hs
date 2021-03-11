@@ -40,6 +40,11 @@ parserTests = describe "Parser" $ do
     runParser spaces' "   x" `shouldBe` Just ("   ", "x")
     runParser spaces' "x" `shouldBe` Nothing
 
+  it "should parse pure strings" $ do
+    runParser alphaString "BEGIN" `shouldBe` Just ("BEGIN", "")
+    runParser alphaString "BEGIN123" `shouldBe` Just ("BEGIN", "123")
+    runParser alphaString "123" `shouldBe` Nothing
+
   it "should parse identifiers" $ do
     runParser identifier "stateName123,xyz" `shouldBe` Just ("stateName123", ",xyz")
     runParser identifier "123state,xyz" `shouldBe` Nothing

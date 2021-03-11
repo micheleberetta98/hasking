@@ -1,9 +1,10 @@
 module Instruction (parseInstruction) where
 
 import           Control.Applicative (Alternative ((<|>)))
-import           Parser              (Parser, char, direction, identifier,
-                                      integer, spaces, spaces')
-import           Tape
+import           Parser              (Parser, alphaString, char, direction,
+                                      identifier, integer, oneOrMore, spaces,
+                                      spaces', zeroOrMore)
+import           Tape                (Direction, Symbol (Symbol))
 
 ------------------------------------------------
 -- Instructions and its types
@@ -21,33 +22,54 @@ data Value = IValue (Symbol Int) | SValue (Symbol String) deriving (Eq)
 -- - A new state name (state id)
 -- - Something to write (value)
 -- - A movement (Direction)
-data Instruction = Instruction
-  { fromState    :: StateId
-  , valueRead    :: Value
-  , toState      :: StateId
-  , valueWritten :: Value
-  , dir          :: Direction
-  } deriving (Eq)
+data Instruction =
+  Step
+    { fromState    :: StateId
+    , valueRead    :: Value
+    , toState      :: StateId
+    , valueWritten :: Value
+    , dir          :: Direction
+    }
+  | Control
+    { command :: String
+    , value   :: [StateId]
+    }
+  deriving (Eq)
 
 ------------------------------------------------
 -- Parsing a single instruction
 ------------------------------------------------
 
--- | Parses an instruction in the form `(fromState valueRead toState valueWritten dir)`
+-- | Parses an instruction in the form  of a step such as `(fromState valueRead toState valueWritten dir)`
+-- or in the form of a control such as `[NAME s1 s2 s3 ...]`
 parseInstruction :: Parser Instruction
-parseInstruction = start *> instruction <* stop
+parseInstruction = parseStep <|> parseControl
+
+-- | Parses a step in the such as `(s1 v1 s2 v2 dir)`
+parseStep :: Parser Instruction
+parseStep = delimiter '(' *> instruction <* delimiter ')'
   where
-    start = spaces *> char '(' *> spaces
-    stop = spaces <* char ')' <* spaces
+    instruction = Step
+      <$> parseStateId <* spaces'
+      <*> parseValue <* spaces'
+      <*> parseStateId <* spaces'
+      <*> parseValue <* spaces'
+      <*> direction
 
-    instruction = Instruction <$> s1 <* seps <*> v1 <* seps <*> s2 <* seps <*> v2 <* seps <*> direction
+-- | Parses a control sequence in the form `[NAME s1 s2 s3 ...]`
+parseControl :: Parser Instruction
+parseControl = delimiter '[' *> control <* delimiter ']'
+  where
+    control = Control
+      <$> alphaString <* spaces'
+      <*> values
 
-    s1 = parseStateId
-    s2 = parseStateId
-    v1 = parseValue
-    v2 = parseValue
+    values = (:) <$> stateIdWithSpaces <*> zeroOrMore stateIdWithSpaces
+    stateIdWithSpaces = spaces *> parseStateId <* spaces
 
-    seps = spaces'
+-- | Parses a delimiter - a start or a stop sequence
+delimiter :: Char -> Parser Char
+delimiter c = spaces *> char c <* spaces
 
 -- | Parses an atom
 parseStateId :: Parser StateId
@@ -76,4 +98,5 @@ instance Show Value where
   show (SValue (Symbol s)) = s
 
 instance Show Instruction where
-  show (Instruction s1 v1 s2 v2 d) = "(" ++ unwords [show s1, show v1, show s2, show v2, show d] ++ ")"
+  show (Step s1 v1 s2 v2 d) = "(" ++ unwords [show s1, show v1, show s2, show v2, show d] ++ ")"
+  show (Control name value) = "[" ++ unwords (name : map show value) ++ "]"
