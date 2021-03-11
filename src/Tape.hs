@@ -63,3 +63,13 @@ write symbol (Cell _ l r) = head
     head = Cell symbol prev next
     prev = l{ right = head }
     next = r{ left = head }
+
+-----------------------------------------------
+-- Instances
+-----------------------------------------------
+
+instance (Ord s) => Ord (Symbol s) where
+  compare Blank Blank             = EQ
+  compare Blank _                 = LT
+  compare _ Blank                 = GT
+  compare (Symbol s1) (Symbol s2) = compare s1 s2

@@ -83,10 +83,6 @@ parseValue = parseSValue <|> parseIValue
     parseIValue = IValue . Symbol <$> integer
 
 ------------------------------------------------
--- Building a Map for all the instructions (TODO)
-------------------------------------------------
-
-------------------------------------------------
 -- Instances
 ------------------------------------------------
 

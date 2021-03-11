@@ -1,7 +1,8 @@
 module Main where
 
 import           Tape          (Direction (..), Symbol (..), fromList, toList)
-import           TuringMachine (State (..), Transition (..), machine)
+import           TuringMachine (State (..), Transitions, buildTransitions,
+                                machine)
 
 main :: IO ()
 main = do
@@ -11,11 +12,12 @@ main = do
   print (toList <$> result)
   print (result >> Just "OK")
 
-t :: Transition Char Int
-t = Transition t'
-  where
-    t' (State 'A', Symbol _) = Just (State 'A', Symbol 1, R)
-    t' (State 'A', Blank)    = Just (State 'B', Blank, L)
-    t' (State 'B', Blank)    = Just (State 'C', Blank, R)
-    t' (State 'B', x)        = Just (State 'B', x, L)
-    t' _                     = Nothing
+t :: Transitions Char Int
+t = buildTransitions
+  [ ((State 'A', Symbol 0), (State 'A', Symbol 1, R))
+  , ((State 'A', Blank   ), (State 'B', Blank,    L))
+  , ((State 'B', Blank   ), (State 'C', Blank,    R))
+  , ((State 'B', Symbol 0), (State 'B', Symbol 0, L))
+  , ((State 'B', Symbol 1), (State 'B', Symbol 1, L))
+  ]
+
