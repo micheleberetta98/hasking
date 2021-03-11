@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 42e8b077a94453d352aed0a08e6d31c0363c3ff2d95dd0ff61cc0818494a222c
+-- hash: b1c4a3ccc5fcd1f1ca42834ac7c104edab58d4e01e5e1971a924187a26ede365
 
 name:           hasking
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Code
       Instruction
       Parser
       Tape
@@ -57,6 +58,7 @@ test-suite hasking-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      CodeSpec
       InstructionSpec
       ParserSpec
       TapeSpec

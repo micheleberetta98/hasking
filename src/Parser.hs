@@ -7,6 +7,7 @@ module Parser
   , spaces1
   , alphaString
   , identifier
+  , atom
   , zeroOrMore
   , oneOrMore
   ) where
@@ -79,6 +80,10 @@ alphaString = oneOrMore (satisfy isAlpha)
 -- letters or numbers
 identifier :: Parser String
 identifier = (:) <$> satisfy isAlpha <*> zeroOrMore (satisfy isAlphaNum)
+
+-- | Parses an atom, i.e. a string made of alphanumeric characters
+atom :: Parser String
+atom = oneOrMore (satisfy isAlphaNum)
 
 -- ------------------------------------------------
 -- -- Repetitions

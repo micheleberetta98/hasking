@@ -1,21 +1,25 @@
-module Instruction (parseInstruction) where
+module Instruction
+  ( Instruction(..)
+  , parseInstruction
+  , stateName
+  , valueSymbol
+  ) where
 
 import           Control.Applicative (Alternative ((<|>)))
+import           Data.Bifunctor
 import           Data.Functor        (($>))
-import           Parser              (Parser, alphaString, char, direction,
-                                      identifier, integer, oneOrMore, spaces,
-                                      spaces1, zeroOrMore)
+import           Parser              (Parser (runParser), alphaString, atom,
+                                      char, direction, identifier, integer,
+                                      oneOrMore, spaces, spaces1, zeroOrMore)
 import           Tape                (Direction, Symbol (..))
+import           TuringMachine
 
 ------------------------------------------------
 -- Instructions and its types
 ------------------------------------------------
 
--- | A `StateId` is an identifier (string)
-newtype StateId = StateId String deriving (Eq)
-
 -- | A `Value` is an input/output on the tape (integer or string)
-data Value = IValue (Symbol Int) | SValue (Symbol String) deriving (Eq)
+newtype Value = Value (Symbol String) deriving (Eq)
 
 -- | An expression for the turing machine is given by
 -- - A state name (state id)
@@ -25,17 +29,27 @@ data Value = IValue (Symbol Int) | SValue (Symbol String) deriving (Eq)
 -- - A movement (Direction)
 data Instruction =
   Step
-    { fromState    :: StateId
+    { fromState    :: State
     , valueRead    :: Value
-    , toState      :: StateId
+    , toState      :: State
     , valueWritten :: Value
     , dir          :: Direction
     }
   | Control
     { command :: String
-    , value   :: [StateId]
+    , value   :: [State]
     }
   deriving (Eq)
+
+------------------------------------------------
+-- Getting values
+------------------------------------------------
+
+stateName :: State -> String
+stateName (State s) = s
+
+valueSymbol :: Value -> Symbol String
+valueSymbol (Value s) = s
 
 ------------------------------------------------
 -- Parsing a single instruction
@@ -43,17 +57,21 @@ data Instruction =
 
 -- | Parses an instruction in the form  of a step such as `(fromState valueRead toState valueWritten dir)`
 -- or in the form of a control such as `[NAME s1 s2 s3 ...]`
-parseInstruction :: Parser Instruction
-parseInstruction = parseStep <|> parseControl
+-- parseInstruction :: String -> Instruction
+parseInstruction :: String -> Maybe Instruction
+parseInstruction s =
+  case runParser (parseStep <|> parseControl) s of
+    Just (i, "") -> Just i
+    _            -> Nothing
 
 -- | Parses a step in the such as `(s1 v1 s2 v2 dir)`
 parseStep :: Parser Instruction
 parseStep = delimiter '(' *> instruction <* delimiter ')'
   where
     instruction = Step
-      <$> parseStateId <* spaces1
+      <$> parseState <* spaces1
       <*> parseValue <* spaces1
-      <*> parseStateId <* spaces1
+      <*> parseState <* spaces1
       <*> parseValue <* spaces1
       <*> direction
 
@@ -65,39 +83,34 @@ parseControl = delimiter '[' *> control <* delimiter ']'
       <$> alphaString <* spaces1
       <*> values
 
-    values = (:) <$> stateIdWithSpaces <*> zeroOrMore stateIdWithSpaces
-    stateIdWithSpaces = spaces *> parseStateId <* spaces
+    values = (:) <$> stateWithSpaces <*> zeroOrMore stateWithSpaces
+    stateWithSpaces = spaces *> parseState <* spaces
 
 -- | Parses a delimiter - a start or a stop sequence
 delimiter :: Char -> Parser Char
 delimiter c = spaces *> char c <* spaces
 
--- | Parses an atom
-parseStateId :: Parser StateId
-parseStateId = StateId <$> identifier
+-- | Parses a state value
+parseState :: Parser State
+parseState = State <$> identifier
 
 -- | Parses a value
 parseValue :: Parser Value
-parseValue = parseSValue <|> parseIValue
+parseValue = Value <$> parseSymbol
   where
-    parseSValue = SValue <$> parseSymbol identifier
-    parseIValue = IValue <$> parseSymbol integer
-
-    parseSymbol contentParser = parseBlank <|> (Symbol <$> contentParser)
+    parseSymbol = parseBlank <|> (Symbol <$> atom)
     parseBlank = char '.' $> Blank
 
 ------------------------------------------------
 -- Instances
 ------------------------------------------------
 
-instance Show StateId where
-  show (StateId name) = name
+instance Show State where
+  show (State name) = name
 
 instance Show Value where
-  show (IValue (Symbol i)) = show i
-  show (SValue (Symbol s)) = s
-  show (SValue Blank)      = "."
-  show (IValue Blank )     = "."
+  show (Value (Symbol i)) = i
+  show (Value Blank)      = "."
 
 instance Show Instruction where
   show (Step s1 v1 s2 v2 d) = "(" ++ unwords [show s1, show v1, show s2, show v2, show d] ++ ")"

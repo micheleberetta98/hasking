@@ -1,5 +1,6 @@
 import           Test.Hspec
 
+import           CodeSpec          (codeTests)
 import           InstructionSpec   (instructionTests)
 import           ParserSpec        (parserTests)
 import           TapeSpec          (tapeTests)
@@ -11,3 +12,4 @@ main = hspec $ do
   turingMachineTests
   parserTests
   instructionTests
+  codeTests

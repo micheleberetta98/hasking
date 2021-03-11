@@ -17,19 +17,19 @@ import           Tape          (Direction, Symbol, Tape, move, value, write)
 ------------------------------------------------
 
 -- | The state of the Turing Machine
-newtype State s = State { getState :: s }
+newtype State = State { getState :: String }
 
 -- | A list of states
-type StateList s = [State s]
+type StateList = [State]
 
 -- | Represents a state in which the machine can be found, along with the read symbol from the tape
-type FromState s a = (State s, Symbol a)
+type FromState a = (State, Symbol a)
 
 -- | Represents the new state of the machine after a transaction, the symbol to write and the direction to move to
-type ToState s a = (State s, Symbol a, Direction)
+type ToState a = (State, Symbol a, Direction)
 
 -- | All of the transitions
-type Transitions s a = Map (FromState s a) (ToState s a)
+type Transitions a = Map (FromState a) (ToState a)
 
 ------------------------------------------------
 -- The machine
@@ -41,7 +41,7 @@ type Transitions s a = Map (FromState s a) (ToState s a)
 -- - A list of final `State`s
 -- - The `Tape` to analyze
 -- It returns `Nothing` if it ends up in an undefined state, or `Just` the resulting `Tape`
-machine :: (Ord s, Ord a, Eq s) => Transitions s a -> State s -> StateList s -> Tape a -> Maybe (Tape a)
+machine :: (Ord a) => Transitions a -> State -> StateList -> Tape a -> Maybe (Tape a)
 machine t st finals tape
   | st `elem` finals = Just tape
   | otherwise        = do
@@ -54,19 +54,19 @@ machine t st finals tape
 
 -- | Given a particular `FromState`, it runs a transition giving maybe a `ToState`
 -- If the transition has not been defined, it returns `Nothing`
-runTransition :: (Ord s, Ord a) => Transitions s a -> FromState s a -> Maybe (ToState s a)
+runTransition :: (Ord a) => Transitions a -> FromState a -> Maybe (ToState a)
 runTransition transitions fromState = transitions !? fromState
 
--- | Constructs the transitions from a list of `(FromState s a, ToState s a)`
-buildTransitions :: (Ord s, Ord a) => [(FromState s a, ToState s a)] -> Transitions s a
+-- | Constructs the transitions from a list of `(FromState a, ToState a)`
+buildTransitions :: (Ord a) => [(FromState a, ToState a)] -> Transitions a
 buildTransitions = fromList
 
 ------------------------------------------------
 -- Instances
 ------------------------------------------------
 
-instance (Eq s) => Eq (State s) where
+instance Eq State where
   (==) = (==) `on` getState
 
-instance (Ord s) => Ord (State s) where
+instance Ord State where
   (<=) = (<=) `on` getState
