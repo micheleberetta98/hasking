@@ -1,8 +1,7 @@
 module TapeSpec where
 
-import           Test.Hspec
-
 import           Tape
+import           Test.Hspec
 
 tapeTests :: SpecWith ()
 tapeTests = describe "Tape" $ do

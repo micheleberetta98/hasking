@@ -1,8 +1,7 @@
 module TuringMachineSpec where
 
-import           Test.Hspec
-
 import           Tape
+import           Test.Hspec
 import           TuringMachine
 
 turingMachineTests :: SpecWith ()

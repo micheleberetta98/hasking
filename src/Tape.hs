@@ -24,7 +24,7 @@ data Tape a = Cell
   deriving (Show)
 
 -- | Represents movement (`L` = left, `R` = right, `S` = stay)
-data Direction = L | R | S deriving (Show)
+data Direction = L | R | S deriving (Show, Eq)
 
 -----------------------------------------------
 -- Tape conversions
