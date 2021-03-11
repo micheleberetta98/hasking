@@ -1,4 +1,4 @@
-module SExpression (parseInstruction) where
+module Instruction (parseInstruction) where
 
 import           Control.Applicative (Alternative ((<|>)))
 import           Parser              (Parser, char, direction, identifier,
