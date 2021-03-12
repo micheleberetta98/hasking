@@ -41,9 +41,13 @@ empty = MachineCode M.empty (State "") [] T.empty
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Nothing` if something goes wrong
 parseCode :: Code -> Maybe MachineCode
-parseCode = foldl' f (Just empty) . lines
+parseCode = foldl' addLine (Just empty) . map stripComment . lines
   where
-    f code line = updateCode (parseInstruction line) code
+    addLine code ""   = code
+    addLine code line = updateCode (parseInstruction line) code
+
+stripComment :: String -> String
+stripComment = takeWhile (/= '#')
 
 -- | Updates the machine code given a single instruction
 updateCode :: Maybe Instruction -> Maybe MachineCode -> Maybe MachineCode
