@@ -28,6 +28,8 @@ runMachine code = do
     Nothing                                 -> putStrLn "Error parsing the code"
     Just (MachineCode ts start finish tape) -> do
       let result = machine ts start finish tape
-      print (toList <$> result)
+      putStrLn (prettyTape result)
 
-
+prettyTape :: Maybe (Tape String) -> String
+prettyTape Nothing  = "? empty tape"
+prettyTape (Just t) = "{" ++ unwords (toList t) ++ "}"
