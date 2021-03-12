@@ -18,7 +18,7 @@ turingMachineTests = describe "Turing Machine" $ do
       result = machine t (State "A") [State "C"] tape
     toList <$> result `shouldBe` Nothing
 
-t :: Transitions Int
+t :: Transitions String Int
 t = buildTransitions
   [ ((State "A", Symbol 0), (State "A", Symbol 1, R))
   , ((State "A", Blank   ), (State "B", Blank,    L))

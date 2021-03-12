@@ -21,17 +21,6 @@ parserTests = describe "Parser" $ do
     ok `shouldBe` Just (123, " rest")
     notok `shouldBe` Nothing
 
-  it "can parse directions" $ do
-    let
-      left = runParser direction "L"
-      right = runParser direction "R"
-      stay = runParser direction "S"
-      wrong = runParser direction "123"
-    left `shouldBe` Just (L, "")
-    right `shouldBe` Just (R, "")
-    stay `shouldBe` Just (S, "")
-    wrong `shouldBe` Nothing
-
   it "should parse spaces" $ do
     runParser spaces "" `shouldBe` Just ("", "")
     runParser spaces "   x" `shouldBe` Just ("   ", "x")

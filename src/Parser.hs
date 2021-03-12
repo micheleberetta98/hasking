@@ -2,7 +2,6 @@ module Parser
   ( Parser(runParser)
   , char
   , integer
-  , direction
   , spaces
   , spaces1
   , alphaString
@@ -54,17 +53,7 @@ integer = Parser f
         ns -> Just (read ns, rest)
       where (ns, rest) = span isDigit xs
 
--- | Parser for a particular tape direction
-direction :: Parser Direction
-direction = Parser f
-  where
-    f []       = Nothing
-    f ('L':xs) = Just (L, xs)
-    f ('R':xs) = Just (R, xs)
-    f ('S':xs) = Just (S, xs)
-    f _        = Nothing
-
-    -- | Parses a series of zero or more spaces
+-- | Parses a series of zero or more spaces
 spaces :: Parser String
 spaces = zeroOrMore (satisfy isSpace)
 
