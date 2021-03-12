@@ -65,11 +65,12 @@ valueSymbol (ISymbol s) = s
 -- | Parses an instruction in the form  of a step such as `(fromState valueRead toState valueWritten dir)`
 -- or in the form of a control such as `[NAME s1 s2 s3 ...]`
 -- parseInstruction :: String -> Instruction
-parseInstruction :: String -> Maybe Instruction
+parseInstruction :: String -> Either String Instruction
 parseInstruction s =
   case runParser (parseStep <|> parseControl <|> parseTape) s of
-    Just (i, "") -> Just i
-    _            -> Nothing
+    Just (i, "") -> Right i
+    Just (i, _)  -> Left "Unrecognized characters after the instruction"
+    _            -> Left "Invalid instruction"
 
 -- | Parses a step in the such as `(s1 v1 s2 v2 dir)`
 parseStep :: Parser Instruction
