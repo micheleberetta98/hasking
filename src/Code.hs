@@ -20,6 +20,7 @@ import           TuringMachine (FromState, State (State), StateList, ToState,
 -- | The raw lines that define the behaviour of the machine, each line defines an `Instruction`
 type Code = String
 
+-- | The whole machine specification, derived from a piece of code
 data MachineCode = MachineCode
   { transitions  :: Transitions String String
   , initialState :: State String

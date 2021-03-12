@@ -138,6 +138,8 @@ instance Show ISymbol where
   show (ISymbol Blank)      = "."
 
 instance Show Instruction where
-  show (Step s1 v1 s2 v2 d) = "(" ++ unwords [show s1, show v1, show s2, show v2, show d] ++ ")"
-  show (Control name value) = "[" ++ unwords (name : map show value) ++ "]"
-  show (TapeValue tape)     = "{" ++ unwords tape ++ "}"
+  show (Step s1 v1 s2 v2 d) = wrapped "(" [show s1, show v1, show s2, show v2, show d] ")"
+  show (Control name value) = wrapped "[" (name : map show value) "]"
+  show (TapeValue tape)     = wrapped "{" tape "}"
+
+wrapped l content r = l ++ unwords content ++ r
