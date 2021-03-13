@@ -1,49 +1,42 @@
 module Instruction
   ( Instruction(..)
   , parseInstruction
-  , stateId
-  , valueSymbol
   ) where
 
 import           Control.Applicative (Alternative ((<|>)))
 import           Data.Functor        (($>))
-import           Parser              (Parser (runParser), alphaString, atom,
-                                      char, identifier, integer, oneOrMore,
-                                      spaces, spaces1, zeroOrMore)
-import           Tape                (Direction (..), Symbol (..), Tape,
-                                      fromList, toList)
-import           TuringMachine       (State (State))
+import           Parser              (Parser (..), astring, atom, char,
+                                      identifier, spaced, spaced1, zeroOrMore)
+import           Tape                (Direction (..), Symbol (..))
+import           TuringMachine       (State (..))
 
 ------------------------------------------------
 -- Instructions and its types
 ------------------------------------------------
 
--- | An `IState` is an instruction-friendly state name
-newtype IState = IState (State String)
+-- | An argument for an instruction: can be either a `State String`, or a `Symbol String` or a `Direction`
+data Arg = AState (State String) | ASymbol (Symbol String) | ADir Direction
 
--- | A `StateList` of string states
-type IStateList = [IState]
-
--- | A `ISymbol` is an instruction-friendly input/output on the tape (integer or string)
-newtype ISymbol = ISymbol (Symbol String)
-
--- | An expression for the turing machine is given by
--- - A state name (state id)
--- - Something to read (value)
--- - A new state name (state id)
--- - Something to write (value)
--- - A movement (Direction)
+-- | An instruction for the turing machine can be
+-- - A `Step` which has
+--  - A state name (state id)
+--  - Something to read (value)
+--  - A new state name (state id)
+--  - Something to write (value)
+--  - A movement (Direction)
+-- - A `Control`, which has a command and a list of states
+-- - A `TapeValue`, the input tape
 data Instruction =
   Step
-    { fromState    :: IState
-    , valueRead    :: ISymbol
-    , toState      :: IState
-    , valueWritten :: ISymbol
+    { fromState    :: State String
+    , valueRead    :: Symbol String
+    , toState      :: State String
+    , valueWritten :: Symbol String
     , dir          :: Direction
     }
   | Control
     { command :: String
-    , value   :: IStateList
+    , value   :: [State String]
     }
   | TapeValue [String]
   deriving (Eq)
@@ -52,11 +45,14 @@ data Instruction =
 -- Getting values
 ------------------------------------------------
 
-stateId :: IState -> State String
-stateId (IState s) = s
+argState :: Arg -> State String
+argState (AState s) = s
 
-valueSymbol :: ISymbol -> Symbol String
-valueSymbol (ISymbol s) = s
+argSymbol :: Arg -> Symbol String
+argSymbol (ASymbol s) = s
+
+argDir :: Arg -> Direction
+argDir (ADir d) = d
 
 ------------------------------------------------
 -- Parsing a single instruction
@@ -67,51 +63,46 @@ valueSymbol (ISymbol s) = s
 -- parseInstruction :: String -> Instruction
 parseInstruction :: String -> Either String Instruction
 parseInstruction s =
-  case runParser (parseStep <|> parseControl <|> parseTape) s of
+  case runParser (step <|> control <|> tape) s of
     Just (i, "") -> Right i
     Just (i, _)  -> Left "Unrecognized characters after the instruction"
     _            -> Left "Invalid instruction"
 
 -- | Parses a step in the such as `(s1 v1 s2 v2 dir)`
-parseStep :: Parser Instruction
-parseStep = delimiter '(' *> instruction <* delimiter ')'
+step :: Parser Instruction
+step = delimiter '(' *> s <* delimiter ')'
   where
-    instruction = Step
-      <$> parseState <* spaces1
-      <*> parseSymbol <* spaces1
-      <*> parseState <* spaces1
-      <*> parseSymbol <* spaces1
-      <*> parseDirection
+    s = Step
+      <$> spaced1 state
+      <*> spaced1 symbol
+      <*> spaced1 state
+      <*> spaced1 symbol
+      <*> spaced direction
 
 -- | Parses a control sequence in the form `[NAME s1 s2 s3 ...]`
-parseControl :: Parser Instruction
-parseControl = delimiter '[' *> control <* delimiter ']'
+control :: Parser Instruction
+control = delimiter '[' *> c <* delimiter ']'
   where
-    control = Control
-      <$> alphaString <* spaces1
-      <*> values
+    c = Control <$> spaced1 astring <*> values
 
-    values = (:) <$> stateWithSpaces <*> zeroOrMore stateWithSpaces
-    stateWithSpaces = spaces *> parseState <* spaces
+    values = (:) <$> spaced state <*> zeroOrMore (spaced state)
 
 -- | Parses the initial value of the tape, namely `{Symbol Symbol ...}`
-parseTape :: Parser Instruction
-parseTape = delimiter '{' *> tape <* delimiter '}'
-  where tape = TapeValue <$> oneOrMore (spaces *> atom <* spaces)
+tape :: Parser Instruction
+tape = delimiter '{' *> t <* delimiter '}'
+  where t = TapeValue <$> zeroOrMore (spaced atom)
 
 -- | Parses a state value
-parseState :: Parser IState
-parseState = IState . State <$> identifier
+state :: Parser (State String)
+state = State <$> identifier
 
 -- | Parses a value
-parseSymbol :: Parser ISymbol
-parseSymbol = ISymbol <$> parseSymbol
-  where
-    parseSymbol = parseBlank <|> (Symbol <$> atom)
-    parseBlank = char '.' $> Blank
+symbol :: Parser (Symbol String)
+symbol = (Symbol <$> atom) <|> blank
+  where blank = char '.' $> Blank
 
-parseDirection :: Parser Direction
-parseDirection = toDirection <$> (char 'L' <|> char 'R' <|> char 'S')
+direction :: Parser Direction
+direction = toDirection <$> (char 'L' <|> char 'R' <|> char 'S')
   where
     toDirection 'L' = L
     toDirection 'R' = R
@@ -119,28 +110,26 @@ parseDirection = toDirection <$> (char 'L' <|> char 'R' <|> char 'S')
 
 -- | Parses a delimiter - a start or a stop sequence
 delimiter :: Char -> Parser Char
-delimiter c = spaces *> char c <* spaces
+delimiter = spaced . char
 
 ------------------------------------------------
 -- Instances
 ------------------------------------------------
 
-instance Eq IState where
-  (IState a) == (IState b) = a == b
-
-instance Eq ISymbol where
-  (ISymbol a) == (ISymbol b) = a == b
-
-instance Show IState where
-  show (IState (State s)) = s
-
-instance Show ISymbol where
-  show (ISymbol (Symbol i)) = i
-  show (ISymbol Blank)      = "."
-
 instance Show Instruction where
-  show (Step s1 v1 s2 v2 d) = wrapped "(" [show s1, show v1, show s2, show v2, show d] ")"
-  show (Control name value) = wrapped "[" (name : map show value) "]"
-  show (TapeValue tape)     = wrapped "{" tape "}"
+  show (Step s1 v1 s2 v2 d) = wrapped '(' [s1', v1', s2', v2', show d] ')'
+    where
+      s1' = getState s1
+      v1' = prettySymbol v1
+      s2' = getState s2
+      v2' = prettySymbol v2
 
-wrapped l content r = l ++ unwords content ++ r
+  show (Control name value) = wrapped '[' (name : map getState value) ']'
+  show (TapeValue tape)     = wrapped '{' tape '}'
+
+prettySymbol :: Symbol String -> String
+prettySymbol (Symbol s) = s
+prettySymbol Blank      = "."
+
+wrapped :: Char -> [String] -> Char -> String
+wrapped l content r = [l] ++ unwords content ++ [r]

@@ -4,18 +4,20 @@ module Parser
   , integer
   , spaces
   , spaces1
-  , alphaString
+  , astring
   , identifier
   , atom
+  , spaced
+  , spaced1
   , zeroOrMore
   , oneOrMore
   ) where
 
 import           Control.Applicative (Alternative (empty, (<|>)),
                                       Applicative (liftA2))
-import           Data.Bifunctor      (first)
+
+import           Data.Bifunctor      (Bifunctor (first))
 import           Data.Char           (isAlpha, isAlphaNum, isDigit, isSpace)
-import           Tape                (Direction (..))
 
 -----------------------------------------------
 -- Data declarations
@@ -26,7 +28,7 @@ import           Tape                (Direction (..))
 newtype Parser a = Parser { runParser :: String -> Maybe (a, String) }
 
 ------------------------------------------------
--- Parser functions
+-- Parser functions and utilities
 ------------------------------------------------
 
 -- | Parses a single char that satisfies the predicate `p`
@@ -62,8 +64,8 @@ spaces1 :: Parser String
 spaces1 = oneOrMore (satisfy isSpace)
 
 -- | Parses a series of alphabetic characters
-alphaString :: Parser String
-alphaString = oneOrMore (satisfy isAlpha)
+astring :: Parser String
+astring = oneOrMore (satisfy isAlpha)
 
 -- | Parses an identifier, which is given by a letter followed by zero or more
 -- letters or numbers
@@ -73,6 +75,16 @@ identifier = (:) <$> satisfy isAlpha <*> zeroOrMore (satisfy isAlphaNum)
 -- | Parses an atom, i.e. a string made of alphanumeric characters
 atom :: Parser String
 atom = oneOrMore (satisfy isAlphaNum)
+
+-- | Utility to transform a parser `p` into a parser of the same type, but with
+-- spaces (or no spaces) around
+spaced :: Parser a -> Parser a
+spaced p = spaces *> p <* spaces
+
+-- | Utility to transform a parser `p` into a parser of the same type, but with
+-- spaces (or no spaces) before and at least 1 space after
+spaced1 :: Parser a -> Parser a
+spaced1 p = spaces *> p <* spaces1
 
 -- ------------------------------------------------
 -- -- Repetitions

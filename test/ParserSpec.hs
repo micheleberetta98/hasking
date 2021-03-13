@@ -21,7 +21,7 @@ parserTests = describe "Parser" $ do
     ok `shouldBe` Just (123, " rest")
     notok `shouldBe` Nothing
 
-  it "should parse spaces" $ do
+  it "should parse spaces and spaced things" $ do
     runParser spaces "" `shouldBe` Just ("", "")
     runParser spaces "   x" `shouldBe` Just ("   ", "x")
     runParser spaces "x" `shouldBe` Just("", "x")
@@ -29,10 +29,22 @@ parserTests = describe "Parser" $ do
     runParser spaces1 "   x" `shouldBe` Just ("   ", "x")
     runParser spaces1 "x" `shouldBe` Nothing
 
+    runParser (spaced integer) "  12  " `shouldBe` Just (12, "")
+    runParser (spaced integer) "12  " `shouldBe` Just (12, "")
+    runParser (spaced integer) "  12" `shouldBe` Just (12, "")
+    runParser (spaced integer) "12" `shouldBe` Just (12, "")
+    runParser (spaced integer) "  x12  " `shouldBe` Nothing
+
+    runParser (spaced1 integer) "  12  " `shouldBe` Just (12, "")
+    runParser (spaced1 integer) "12  " `shouldBe` Just (12, "")
+    runParser (spaced1 integer) "  12" `shouldBe` Nothing
+    runParser (spaced1 integer) "12" `shouldBe` Nothing
+    runParser (spaced1 integer) "x12 " `shouldBe` Nothing
+
   it "should parse pure strings" $ do
-    runParser alphaString "BEGIN" `shouldBe` Just ("BEGIN", "")
-    runParser alphaString "BEGIN123" `shouldBe` Just ("BEGIN", "123")
-    runParser alphaString "123" `shouldBe` Nothing
+    runParser astring "BEGIN" `shouldBe` Just ("BEGIN", "")
+    runParser astring "BEGIN123" `shouldBe` Just ("BEGIN", "123")
+    runParser astring "123" `shouldBe` Nothing
 
   it "should parse identifiers" $ do
     runParser identifier "stateName123,xyz" `shouldBe` Just ("stateName123", ",xyz")
