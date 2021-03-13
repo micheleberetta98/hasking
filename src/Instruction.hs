@@ -14,9 +14,6 @@ import           TuringMachine       (State (..))
 -- Instructions and its types
 ------------------------------------------------
 
--- | An argument for an instruction: can be either a `State String`, or a `Symbol String` or a `Direction`
-data Arg = AState (State String) | ASymbol (Symbol String) | ADir Direction
-
 -- | An instruction for the turing machine can be
 -- - A `Step` which has
 --  - A state name (state id)
@@ -40,19 +37,6 @@ data Instruction =
     }
   | TapeValue [String]
   deriving (Eq)
-
-------------------------------------------------
--- Getting values
-------------------------------------------------
-
-argState :: Arg -> State String
-argState (AState s) = s
-
-argSymbol :: Arg -> Symbol String
-argSymbol (ASymbol s) = s
-
-argDir :: Arg -> Direction
-argDir (ADir d) = d
 
 ------------------------------------------------
 -- Parsing a single instruction

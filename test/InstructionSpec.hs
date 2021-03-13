@@ -12,12 +12,12 @@ instructionTests = describe "Instruction" $ do
       Right i1 = parseInstruction "(s 0 q 1 R)"
       Right i2 = parseInstruction " ( s  0   q  1 R  ) "
       Right i3 = parseInstruction "(s2 20 qx7 L21 S)"
-      Right i4 = parseInstruction "(s . q . S)"
+      Right i4 = parseInstruction "(s1 0 s2 . S)"
 
     show i1 `shouldBe` "(s 0 q 1 R)"
     show i2 `shouldBe` "(s 0 q 1 R)"
     show i3 `shouldBe` "(s2 20 qx7 L21 S)"
-    show i4 `shouldBe` "(s . q . S)"
+    show i4 `shouldBe` "(s1 0 s2 . S)"
 
   it "should not parse wrong steps" $ do
     let
@@ -40,9 +40,11 @@ instructionTests = describe "Instruction" $ do
     let
       Right c1 = parseInstruction "[BEGIN s1]"
       Right c2 = parseInstruction "[FINAL s1 s2 s3]"
+      Right c3 = parseInstruction "[FINAL s1]"
 
     show c1 `shouldBe` "[BEGIN s1]"
     show c2 `shouldBe` "[FINAL s1 s2 s3]"
+    show c3 `shouldBe` "[FINAL s1]"
 
   it "should not parse wrong control sequences" $ do
     let

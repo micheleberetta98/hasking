@@ -7,6 +7,7 @@ import           Data.List
 import qualified Data.Map      as M
 import           Instruction   (Instruction (Control, Step, TapeValue),
                                 parseInstruction)
+import           LineError     (ErrorList, justOne, simpleError, (.+))
 import           Tape          (Tape)
 import qualified Tape          as T
 import           TuringMachine (FromState, State (State), StateList, ToState,
@@ -21,7 +22,7 @@ type Code = String
 
 type From = FromState String String
 type To = ToState String String
-type WithError = Either String
+type WithError = Either ErrorList
 
 -- | The whole machine specification, derived from a piece of code
 data MachineCode = MachineCode
@@ -42,58 +43,56 @@ empty = MachineCode M.empty (State "") [] T.empty
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Nothing` if something goes wrong
 parseCode :: Code -> WithError MachineCode
-parseCode code = (buildCode . map stripComment $ lines code) >>= validate
+parseCode code = (buildCode . map parseInstruction . stripComments $ lines code) >>= validate
   where
-    buildCode = foldl' addLine (Right empty)
+    buildCode :: [Either String Instruction] -> WithError MachineCode
+    buildCode = foldl' combine (Right empty)
 
-    addLine c ""   = c
-    addLine c line = updateCode (parseInstruction line) c
+    combine (Left es) (Left l) = Left $ es .+ simpleError l
+    combine (Left es) _        = Left es
+    combine (Right c) l        = updateCode l c
 
 -- | Removes a comment from a line
-stripComment :: String -> String
-stripComment = takeWhile (/= '#')
+stripComments :: [String] -> [String]
+stripComments = filter (/= "") . map (takeWhile (/= '#'))
 
 -- | Validates the final machine code
 validate :: MachineCode -> WithError MachineCode
 validate (MachineCode t _ _ _)
-  | t == M.empty                        = Left "No instructions provided"
-validate (MachineCode _ (State "") _ _) = Left "No initial state provided"
-validate (MachineCode _ _ [] _)         = Left "No final states provided"
+  | t == M.empty                        = Left. justOne $ simpleError "No instructions provided"
+validate (MachineCode _ (State "") _ _) = Left. justOne $ simpleError "No initial state provided"
+validate (MachineCode _ _ [] _)         = Left. justOne $ simpleError "No final states provided"
 validate (MachineCode _ _ _ t)
-  | null (T.toList t)                   = Left "No tape provided"
+  | null (T.toList t)                   = Left . justOne $ simpleError "No tape provided"
 validate m                              = Right m
 
 -- | Updates the machine code given a single instruction
-updateCode :: WithError Instruction -> WithError MachineCode -> WithError MachineCode
+updateCode :: Either String Instruction -> MachineCode -> WithError MachineCode
 updateCode (Right s@Step {})             = addTransition $ split s
 updateCode (Right c@(Control "BEGIN" s)) = setInitialState s
 updateCode (Right c@(Control "FINAL" s)) = setFinalStates s
 updateCode (Right t@(TapeValue tape))    = withTape tape
-updateCode (Left s)                      = const (Left s)
+updateCode (Left s)                      = const . Left .justOne $ simpleError s
 
 -- | Inserts a new transitions into the existing ones
-addTransition :: (From, To) -> WithError MachineCode -> WithError MachineCode
-addTransition (from, to) (Right c) = Right $ c{ transitions = M.insert from to (transitions c) }
-addTransition _  l                 = l
+addTransition :: (From, To) -> MachineCode -> WithError MachineCode
+addTransition (from, to) c = Right $ c{ transitions = M.insert from to (transitions c) }
 
 -- | Updates the initial state of the machine code
-setInitialState :: [State String] -> WithError MachineCode -> WithError MachineCode
-setInitialState [state] (Right c) = Right $ c{ initialState = state }
-setInitialState [] (Right _)      = Left "No initial state provided"
-setInitialState states (Right _)  = Left "More than one initial state"
-setInitialState _ l               = l
+setInitialState :: [State String] -> MachineCode -> WithError MachineCode
+setInitialState [state] c = Right $ c{ initialState = state }
+setInitialState []  _     = Left . justOne $ simpleError "No initial state provided"
+setInitialState states  _ = Left . justOne $ simpleError "More than one initial state"
 
 -- | Updates the final states of the machine code
-setFinalStates :: StateList String -> WithError MachineCode -> WithError MachineCode
-setFinalStates [] _             = Left "No final states provided"
-setFinalStates states (Right c) = Right $ c{ finalStates = states }
-setFinalStates _ l              = l
+setFinalStates :: StateList String -> MachineCode -> WithError MachineCode
+setFinalStates [] _     = Left . justOne $ simpleError "No final states provided"
+setFinalStates states c = Right $ c{ finalStates = states }
 
 -- | Updates the initial tape value
-withTape :: [String] -> WithError MachineCode -> WithError MachineCode
-withTape [] (Right _)   = Left "Empty input tape provided"
-withTape tape (Right c) = Right $ c{ initialTape = T.fromList tape }
-withTape _ l            = l
+withTape :: [String] -> MachineCode -> WithError MachineCode
+withTape [] _   = Left . justOne $ simpleError "Empty input tape provided"
+withTape tape c = Right $ c{ initialTape = T.fromList tape }
 
 -- | It converts a `Step` instruction into a tuple made of `FromState` and `ToState`
 split :: Instruction -> (From, To)

@@ -2,7 +2,8 @@ module CodeSpec where
 
 import           Code
 import qualified Data.Map      as M
-import           Tape
+import           LineError     (empty)
+import           Tape          hiding (empty)
 import           Test.Hspec
 import           TuringMachine
 
@@ -19,8 +20,6 @@ codeTests = describe "Code" $ do
       Left msg1 = parseCode "[BEGIN s1]\n[FINAL s2]\n(s10 s2 . S)"
       Left msg2 = parseCode "{0 0 0 0}\n[BEGIN s a]\n[FINAL q]\n(s 0 s 1 R)"
 
-    print msg2
-
-    msg1 `shouldNotBe` ""
-    msg2 `shouldNotBe` ""
+    msg1 `shouldNotBe` empty
+    msg2 `shouldNotBe` empty
 

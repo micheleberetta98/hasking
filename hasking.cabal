@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1f5a75721e401b39a51c5a3053253f6570cd0ffad79db84bf9be17dfdc6362be
+-- hash: 91fceff61b74ae8458e8d7782891169485b8062442440687fcb667bc7e02ccc5
 
 name:           hasking
 version:        0.1.0.0
@@ -28,6 +28,7 @@ library
   exposed-modules:
       Code
       Instruction
+      LineError
       Parser
       Tape
       TuringMachine
