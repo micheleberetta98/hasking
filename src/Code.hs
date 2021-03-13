@@ -52,7 +52,7 @@ empty = MachineCode M.empty (State "") [] T.empty
 parseCode :: Code -> WithError MachineCode
 parseCode code = (buildCode . parseInstructions . stripComments $ lines' code) >>= mvalidate
   where
-    buildCode = foldl' (<+>) (Right empty)
+    buildCode = foldl' (+>) (Right empty)
     parseInstructions = map (format . fmap parseInstruction)
 
     format :: (Int, Either String Instruction) -> Either LineError LineInstruction
@@ -91,27 +91,27 @@ split (Step s1 v1 s2 v2 d) = (from, to)
 ------------------------------------------------
 
 -- | Combines an `WithError MachineCode` with a `Either LineError LineInstruction`
-(<+>) :: WithError MachineCode -> Either LineError LineInstruction -> WithError MachineCode
-Left es <+> Left e  = Left (es .+ e)
-Left es <+> Right i = Left es <++> ivalidate i
-Right c <+> Left e  = just e
-Right c <+> Right i = updateCode c <$> ivalidate i
+(+>) :: WithError MachineCode -> Either LineError LineInstruction -> WithError MachineCode
+Left es +> Left e  = Left (es .+ e)
+Left es +> Right i = Left es ++> ivalidate i
+Right c +> Left e  = just e
+Right c +> Right i = updateCode c <$> ivalidate i
 
--- | Combines two `WithError ` together
-(<++>) :: WithError a -> WithError b -> WithError a
-Left es1 <++> Left es2 = Left (es1 .++ es2)
-Right _ <++> Left es   = Left es
-Left es <++> Right _   = Left es
-Right x <++> Right _   = Right x
+-- | Combines two `WithError` together
+(++>) :: WithError a -> WithError b -> WithError a
+Left es1 ++> Left es2 = Left (es1 .++ es2)
+Right _ ++> Left es   = Left es
+Left es ++> Right _   = Left es
+Right x ++> Right _   = Right x
 
 ------------------------------------------------
--- validations
+-- Validations
 ------------------------------------------------
 
 -- | Validates the final machine code
 mvalidate :: MachineCode -> WithError MachineCode
 mvalidate m@(MachineCode tr s ss t) =
-  (trans tr <++> initial s <++> finals ss <++> tape t) >> Right m
+  (trans tr ++> initial s ++> finals ss ++> tape t) >> Right m
   where
     trans t
       | t == M.empty = just $ simpleError "No instructions provided"
@@ -130,7 +130,7 @@ ivalidate (l, i) = ivalidate' i l
   where
     ivalidate' (Control "BEGIN" [])  = just . linedError "No initial state provided"
     ivalidate' (Control "BEGIN" states)
-      | length states > 1           = just . linedError "More than one initial state provided"
+      | length states > 1            = just . linedError "More than one initial state provided"
     ivalidate' (Control "FINALS" []) = just . linedError "No final states provided"
     ivalidate' (TapeValue [])        = just . linedError "Empty input tape provided"
     ivalidate' i                     = const (Right i)
