@@ -41,9 +41,9 @@ type Transitions s a = Map (FromState s a) (ToState s a)
 -- - A list of final `State`s
 -- - The `Tape` to analyze
 -- It returns `Nothing` if it ends up in an undefined state, or `Just` the resulting `Tape`
-machine :: (Ord s, Eq s, Ord a) => Transitions s a -> State s -> StateList  s-> Tape a -> Maybe (Tape a)
+machine :: (Ord s, Eq s, Ord a) => Transitions s a -> State s -> StateList  s-> Tape a -> Either (FromState s a) (Tape a)
 machine t st finals tape
-  | st `elem` finals = Just tape
+  | st `elem` finals = Right tape
   | otherwise        = do
     (st', out, dir) <- runTransition t (st, value tape)
     machine t st' finals (move dir $ write out tape)
@@ -54,8 +54,11 @@ machine t st finals tape
 
 -- | Given a particular `FromState`, it runs a transition giving maybe a `ToState`
 -- If the transition has not been defined, it returns `Nothing`
-runTransition :: (Ord s, Ord a) => Transitions s a -> FromState s a -> Maybe (ToState s a)
-runTransition transitions fromState = transitions !? fromState
+runTransition :: (Ord s, Ord a) => Transitions s a -> FromState s a -> Either (FromState s a) (ToState s a)
+runTransition transitions fromState =
+  case transitions !? fromState of
+    Just to -> Right to
+    Nothing -> Left fromState
 
 -- | Constructs the transitions from a list of `(FromState s a, ToState s a)`
 buildTransitions :: (Ord s, Ord a) => [(FromState s a, ToState s a)] -> Transitions s a

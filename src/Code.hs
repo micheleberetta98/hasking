@@ -22,7 +22,10 @@ import           TuringMachine (FromState, State (State), StateList, ToState,
 type Code = String
 
 -- | A line with its number
-type CodeLine = (Int, String)
+type LineCode = (Int, String)
+
+-- | An instruction with its line number
+type LineInstruction = (Int, Instruction)
 
 type From = FromState String String
 type To = ToState String String
@@ -52,15 +55,16 @@ parseCode code = (buildCode . parseInstructions . stripComments $ lines' code) >
     buildCode = foldl' (<+>) (Right empty)
     parseInstructions = map (format . fmap parseInstruction)
 
-    format (l, Left msg) = Left $ linedError l msg
-    format (_, Right i)  = Right i
+    format :: (Int, Either String Instruction) -> Either LineError LineInstruction
+    format (l, Left msg) = Left $ linedError msg l
+    format (l, Right i)  = Right (l, i)
 
 -- | Add line numbers to the code
-lines' :: String -> [(Int, String)]
+lines' :: Code -> [LineCode]
 lines' = zip [1..] . lines
 
 -- | Removes a comment from a line
-stripComments :: [CodeLine] -> [CodeLine]
+stripComments :: [LineCode] -> [LineCode]
 stripComments = filter notEmpty . map (fmap (takeWhile (/= '#')))
   where notEmpty (_, l) = l /= ""
 
@@ -86,18 +90,19 @@ split (Step s1 v1 s2 v2 d) = (from, to)
 -- Utils to combine errors
 ------------------------------------------------
 
--- | Combines an `WithError MachineCode` with a `Either String Instruction`
-(<+>) :: WithError MachineCode -> Either LineError Instruction -> WithError MachineCode
-Left es <+> Left le = Left (es .+ le)
-Left es <+> Right _ = Left es
-Right c <+> Left le = just le
+-- | Combines an `WithError MachineCode` with a `Either LineError LineInstruction`
+(<+>) :: WithError MachineCode -> Either LineError LineInstruction -> WithError MachineCode
+Left es <+> Left e  = Left (es .+ e)
+Left es <+> Right i = Left es <++> ivalidate i
+Right c <+> Left e  = just e
 Right c <+> Right i = updateCode c <$> ivalidate i
 
--- | Combines two `Left ErrorList` together
-(<++>) :: WithError a -> WithError b -> WithError c
+-- | Combines two `WithError ` together
+(<++>) :: WithError a -> WithError b -> WithError a
 Left es1 <++> Left es2 = Left (es1 .++ es2)
 Right _ <++> Left es   = Left es
 Left es <++> Right _   = Left es
+Right x <++> Right _   = Right x
 
 ------------------------------------------------
 -- validations
@@ -105,22 +110,30 @@ Left es <++> Right _   = Left es
 
 -- | Validates the final machine code
 mvalidate :: MachineCode -> WithError MachineCode
-mvalidate (MachineCode t _ _ _)
-  | t == M.empty                         = just $ simpleError "No instructions provided"
-mvalidate (MachineCode _ (State "") _ _) = just $ simpleError "No initial state provided"
-mvalidate (MachineCode _ _ [] _)         = just $ simpleError "No final states provided"
-mvalidate (MachineCode _ _ _ t)
-  | null (T.toList t)                    = just $ simpleError "No tape provided"
-mvalidate m                              = Right m
+mvalidate m@(MachineCode tr s ss t) =
+  (trans tr <++> initial s <++> finals ss <++> tape t) >> Right m
+  where
+    trans t
+      | t == M.empty = just $ simpleError "No instructions provided"
+      | otherwise    = Right ""
+    initial (State "") = just $ simpleError "No initial state provided"
+    initial _          = Right ""
+    finals [] = just $ simpleError "No final states provided"
+    finals _  = Right ""
+    tape t
+      | null (T.toList t) = just $ simpleError "No tape provided"
+      | otherwise         = Right ""
 
 -- | Validates the instruction
-ivalidate :: Instruction -> WithError Instruction
-ivalidate (Control "BEGIN" [])  = just $ simpleError "No initial state provided"
-ivalidate (Control "BEGIN" states)
-  | length states > 1           = just $ simpleError "More than one inital state provided"
-ivalidate (Control "FINALS" []) = just $ simpleError "No final states provided"
-ivalidate (TapeValue [])        = just $ simpleError "Empty input tape provided"
-ivalidate i                     = Right i
+ivalidate :: LineInstruction -> WithError Instruction
+ivalidate (l, i) = ivalidate' i l
+  where
+    ivalidate' (Control "BEGIN" [])  = just . linedError "No initial state provided"
+    ivalidate' (Control "BEGIN" states)
+      | length states > 1           = just . linedError "More than one inital state provided"
+    ivalidate' (Control "FINALS" []) = just . linedError "No final states provided"
+    ivalidate' (TapeValue [])        = just . linedError "Empty input tape provided"
+    ivalidate' i                     = const (Right i)
 
 -- | Utility that creates a single `Left (ErrorList [LineError])`
 just :: LineError -> WithError b

@@ -40,8 +40,8 @@ simpleError :: String -> LineError
 simpleError msg = LineError (Nothing, msg)
 
 -- | Creates an error with a line
-linedError :: Int -> String -> LineError
-linedError l msg = LineError (Just l, msg)
+linedError :: String -> Int -> LineError
+linedError msg l = LineError (Just l, msg)
 
 -- | Retrieves the line of a `LineError`
 line :: LineError -> Maybe Int

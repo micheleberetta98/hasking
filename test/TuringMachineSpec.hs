@@ -10,13 +10,13 @@ turingMachineTests = describe "Turing Machine" $ do
     let
       tape = fromList [0, 0, 0, 0]
       result = machine t (State "A") [State "C"] tape
-    toList <$> result `shouldBe` Just [1, 1, 1, 1]
+    toList <$> result `shouldBe` Right [1, 1, 1, 1]
 
   it "should give back Nothing when something goes wrong" $ do
     let
       tape = fromList [0, 1, 0, 0]
       result = machine t (State "A") [State "C"] tape
-    toList <$> result `shouldBe` Nothing
+    toList <$> result `shouldBe` Left (State "A", Symbol 1)
 
 t :: Transitions String Int
 t = buildTransitions

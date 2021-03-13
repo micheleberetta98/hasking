@@ -14,7 +14,7 @@ module Tape
 -- Data declarations
 -----------------------------------------------
 -- | Represents a Symbol, which can be the control symbol `Blank` or user defined data
-data Symbol a = Blank | Symbol a deriving (Show, Eq)
+data Symbol a = Blank | Symbol a deriving (Eq)
 
 -- | An infinite Tape of Symbols of type `a`, which can be moved either *left* or *right*
 data Tape a = Cell
@@ -68,6 +68,10 @@ write symbol (Cell _ l r) = head
 -----------------------------------------------
 -- Instances
 -----------------------------------------------
+
+instance (Show s) => Show (Symbol s) where
+  show (Symbol s) = show s
+  show Blank      = "."
 
 instance (Ord s) => Ord (Symbol s) where
   compare Blank Blank             = EQ

@@ -30,6 +30,6 @@ runMachine code = do
       let result = machine ts start finish tape
       putStrLn (prettyTape result)
 
-prettyTape :: Maybe (Tape String) -> String
-prettyTape Nothing  = "? invalid state found"
-prettyTape (Just t) = "{" ++ unwords (toList t) ++ "}"
+prettyTape :: (Show s, Show a) => Either (State s, Symbol a) (Tape String) -> String
+prettyTape (Left (s, symbol))  = "? invalid state found: (state = " ++ show s ++ ", symbol = " ++ show symbol ++ ")"
+prettyTape (Right t) = "OK\nOutput tape: {" ++ unwords (toList t) ++ "}"
