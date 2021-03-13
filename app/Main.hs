@@ -25,9 +25,7 @@ validateArgs (fname:_) = do
 runMachine :: String -> IO ()
 runMachine code = do
   case parseCode code of
-    Left errors                               -> do
-      print errors
-      putStrLn ""
+    Left errors                               -> print errors
     Right (MachineCode ts start finish tape) -> do
       let result = machine ts start finish tape
       putStrLn (prettyTape result)

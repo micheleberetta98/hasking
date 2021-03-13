@@ -7,8 +7,8 @@ import           Data.List     (foldl')
 import qualified Data.Map      as M
 import           Instruction   (Instruction (Control, Step, TapeValue),
                                 parseInstruction)
-import           LineError     (ErrorList, LineError, justOne, simpleError,
-                                (.+), (.++))
+import           LineError     (ErrorList, LineError, justOne, linedError,
+                                simpleError, (.+), (.++))
 import           Tape          (Direction, Symbol, Tape)
 import qualified Tape          as T
 import           TuringMachine (FromState, State (State), StateList, ToState,
@@ -20,6 +20,9 @@ import           TuringMachine (FromState, State (State), StateList, ToState,
 
 -- | The raw lines that define the behaviour of the machine, each line defines an `Instruction`
 type Code = String
+
+-- | A line with its number
+type CodeLine = (Int, String)
 
 type From = FromState String String
 type To = ToState String String
@@ -44,14 +47,22 @@ empty = MachineCode M.empty (State "") [] T.empty
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Nothing` if something goes wrong
 parseCode :: Code -> WithError MachineCode
-parseCode code = (buildCode . map parseInstruction . stripComments $ lines code) >>= mvalidate
+parseCode code = (buildCode . parseInstructions . stripComments $ lines' code) >>= mvalidate
   where
-    buildCode :: [Either String Instruction] -> WithError MachineCode
     buildCode = foldl' (<+>) (Right empty)
+    parseInstructions = map (format . fmap parseInstruction)
+
+    format (l, Left msg) = Left $ linedError l msg
+    format (_, Right i)  = Right i
+
+-- | Add line numbers to the code
+lines' :: String -> [(Int, String)]
+lines' = zip [1..] . lines
 
 -- | Removes a comment from a line
-stripComments :: [String] -> [String]
-stripComments = filter (/= "") . map (takeWhile (/= '#'))
+stripComments :: [CodeLine] -> [CodeLine]
+stripComments = filter notEmpty . map (fmap (takeWhile (/= '#')))
+  where notEmpty (_, l) = l /= ""
 
 -- | Updates the machine code given a single instruction
 updateCode :: MachineCode -> Instruction -> MachineCode
@@ -76,10 +87,10 @@ split (Step s1 v1 s2 v2 d) = (from, to)
 ------------------------------------------------
 
 -- | Combines an `WithError MachineCode` with a `Either String Instruction`
-(<+>) :: WithError MachineCode -> Either String Instruction -> WithError MachineCode
-Left es <+> Left l  = Left (es .+ simpleError l)
+(<+>) :: WithError MachineCode -> Either LineError Instruction -> WithError MachineCode
+Left es <+> Left le = Left (es .+ le)
 Left es <+> Right _ = Left es
-Right c <+> Left el = just (simpleError el)
+Right c <+> Left le = just le
 Right c <+> Right i = updateCode c <$> ivalidate i
 
 -- | Combines two `Left ErrorList` together
@@ -101,7 +112,6 @@ mvalidate (MachineCode _ _ [] _)         = just $ simpleError "No final states p
 mvalidate (MachineCode _ _ _ t)
   | null (T.toList t)                    = just $ simpleError "No tape provided"
 mvalidate m                              = Right m
-
 
 -- | Validates the instruction
 ivalidate :: Instruction -> WithError Instruction
