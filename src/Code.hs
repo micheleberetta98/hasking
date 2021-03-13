@@ -130,7 +130,7 @@ ivalidate (l, i) = ivalidate' i l
   where
     ivalidate' (Control "BEGIN" [])  = just . linedError "No initial state provided"
     ivalidate' (Control "BEGIN" states)
-      | length states > 1           = just . linedError "More than one inital state provided"
+      | length states > 1           = just . linedError "More than one initial state provided"
     ivalidate' (Control "FINALS" []) = just . linedError "No final states provided"
     ivalidate' (TapeValue [])        = just . linedError "Empty input tape provided"
     ivalidate' i                     = const (Right i)
