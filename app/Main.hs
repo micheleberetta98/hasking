@@ -25,11 +25,13 @@ validateArgs (fname:_) = do
 runMachine :: String -> IO ()
 runMachine code = do
   case parseCode code of
-    Left errors                               -> putStrLn (show errors)
+    Left errors                               -> do
+      print errors
+      putStrLn ""
     Right (MachineCode ts start finish tape) -> do
       let result = machine ts start finish tape
       putStrLn (prettyTape result)
 
 prettyTape :: Maybe (Tape String) -> String
-prettyTape Nothing  = "? empty tape"
+prettyTape Nothing  = "? invalid state found"
 prettyTape (Just t) = "{" ++ unwords (toList t) ++ "}"

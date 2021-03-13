@@ -8,6 +8,7 @@ module LineError
   , line
   , errorMsg
   , (.+)
+  , (.++)
   ) where
 
 import           Data.List
@@ -32,7 +33,7 @@ empty = ErrorList []
 
 -- | Creates a list with a single error
 justOne :: LineError -> ErrorList
-justOne le = empty .+ le
+justOne le = ErrorList [le]
 
 -- | Creates a simple error without a line
 simpleError :: String -> LineError
@@ -52,7 +53,11 @@ errorMsg (LineError (_, s)) = s
 
 -- | Adds an error to the error list
 (.+) :: ErrorList -> LineError -> ErrorList
-ErrorList es .+ le = ErrorList (es ++ [le])
+es .+ le = es .++ justOne le
+
+-- | Combines two ErrorList together
+(.++) :: ErrorList -> ErrorList -> ErrorList
+ErrorList es1 .++  ErrorList es2 = ErrorList (es1 ++ es2)
 
 ------------------------------------------------
 -- Instances
