@@ -3,7 +3,7 @@
 {0 0 0}     # The input tape
 
 [BEGIN s]     # The initial state
-[FINAL f]     # The final state (here just 1, could be more)
+[FINAL q]     # The final state (here just 1, could be more)
 
 # s = going to the right and changing the value
 # x = going to the left
