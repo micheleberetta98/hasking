@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 91fceff61b74ae8458e8d7782891169485b8062442440687fcb667bc7e02ccc5
+-- hash: ac8d0bbd69bf3481c0063474683e1efda0a945d293c5be164bb313bc6c636ff5
 
 name:           hasking
-version:        0.1.0.0
+version:        1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/hasking#readme>
 homepage:       https://github.com/githubuser/hasking#readme
 bug-reports:    https://github.com/githubuser/hasking/issues
@@ -45,6 +45,7 @@ library
 executable hasking-exe
   main-is: Main.hs
   other-modules:
+      Opts
       Paths_hasking
   hs-source-dirs:
       app
