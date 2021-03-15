@@ -7,6 +7,7 @@ import           Control.Applicative (Alternative ((<|>)))
 import           Data.Functor        (($>))
 import           Parser              (Parser (..), astring, atom, char,
                                       identifier, spaced, spaced1, zeroOrMore)
+import           Pretty              (Pretty (..), prettyList, wrap)
 import           Tape                (Direction (..), Symbol (..))
 import           TuringMachine       (State (..))
 
@@ -36,7 +37,7 @@ data Instruction =
     , value   :: [State String]
     }
   | TapeValue [String]
-  deriving (Eq)
+  deriving (Show, Eq)
 
 ------------------------------------------------
 -- Parsing a single instruction
@@ -100,20 +101,13 @@ delimiter = spaced . char
 -- Instances
 ------------------------------------------------
 
-instance Show Instruction where
-  show (Step s1 v1 s2 v2 d) = wrapped '(' [s1', v1', s2', v2', show d] ')'
+instance Pretty Instruction where
+  pretty (Step s1 v1 s2 v2 d) = wrap "(" (prettyList [s1', v1', s2', v2', pretty d]) ")"
     where
-      s1' = getState s1
-      v1' = prettySymbol v1
-      s2' = getState s2
-      v2' = prettySymbol v2
+      s1' = pretty s1
+      v1' = pretty v1
+      s2' = pretty s2
+      v2' = pretty v2
+  pretty (Control name value) = wrap "[" (prettyList (name : map pretty value)) "]"
+  pretty (TapeValue tape)     = wrap "{" (prettyList tape) "}"
 
-  show (Control name value) = wrapped '[' (name : map getState value) ']'
-  show (TapeValue tape)     = wrapped '{' tape '}'
-
-prettySymbol :: Symbol String -> String
-prettySymbol (Symbol s) = s
-prettySymbol Blank      = "."
-
-wrapped :: Char -> [String] -> Char -> String
-wrapped l content r = [l] ++ unwords content ++ [r]

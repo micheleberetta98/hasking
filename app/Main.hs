@@ -2,6 +2,7 @@ module Main (main) where
 
 import           Code          (MachineCode (MachineCode), parseCode)
 import           Opts          (getOpts)
+import           Pretty        (Pretty (..), wrap, prettyList)
 import           System.IO     (hPrint, hPutStrLn, stderr)
 import           Tape          (Symbol, Tape, toList)
 import           TuringMachine (State, machine)
@@ -24,9 +25,9 @@ runMachine code = do
       result (machine ts start finish tape)
 
 -- | Formats the final tape in a nice way, or it prints the errors
-result :: (Show s, Show a) => Either (State s, Symbol a) (Tape String) -> IO [Char]
+result :: (Pretty s, Pretty a, Pretty t) => Either (State s, Symbol a) (Tape t) -> IO [Char]
 result (Left (s, symbol)) = do
-  hPutStrLn stderr $ "(?) invalid state found: (state = " ++ show s ++ ", symbol = " ++ show symbol ++ ")"
+  hPutStrLn stderr $ "(?) invalid state found: (state = " ++ pretty s ++ ", symbol = " ++ pretty symbol ++ ")"
   return ""
 result (Right t) = do
-  return $ "{" ++ unwords (toList t) ++ "}"
+  return $ pretty t

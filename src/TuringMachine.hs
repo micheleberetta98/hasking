@@ -10,6 +10,7 @@ module TuringMachine
 
 import           Data.Function (on)
 import           Data.Map      (Map, fromList, (!?))
+import           Pretty        (Pretty (..))
 import           Tape          (Direction, Symbol, Tape, move, value, write)
 
 ------------------------------------------------
@@ -17,7 +18,7 @@ import           Tape          (Direction, Symbol, Tape, move, value, write)
 ------------------------------------------------
 
 -- | The state of the Turing Machine
-newtype State s = State { getState :: s }
+newtype State s = State { getState :: s } deriving (Show)
 
 -- | A list of states
 type StateList s = [State s]
@@ -74,5 +75,5 @@ instance (Eq s) => Eq (State s) where
 instance (Ord s) => Ord (State s) where
   (<=) = (<=) `on` getState
 
-instance (Show s) => Show (State s) where
-  show (State s) = show s
+instance (Pretty s) => Pretty (State s) where
+  pretty (State s) = pretty s

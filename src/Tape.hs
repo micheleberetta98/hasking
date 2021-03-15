@@ -10,11 +10,13 @@ module Tape
   , empty
   ) where
 
+import           Pretty (Pretty (..), prettyList, wrap)
+
 -----------------------------------------------
 -- Data declarations
 -----------------------------------------------
 -- | Represents a Symbol, which can be the control symbol `Blank` or user defined data
-data Symbol a = Blank | Symbol a deriving (Eq)
+data Symbol a = Blank | Symbol a deriving (Show, Eq)
 
 -- | An infinite Tape of Symbols of type `a`, which can be moved either *left* or *right*
 data Tape a = Cell
@@ -69,12 +71,18 @@ write symbol (Cell _ l r) = head
 -- Instances
 -----------------------------------------------
 
-instance (Show s) => Show (Symbol s) where
-  show (Symbol s) = show s
-  show Blank      = "."
+instance (Pretty s) => Pretty (Symbol s) where
+  pretty (Symbol s) = pretty s
+  pretty Blank      = "."
 
 instance (Ord s) => Ord (Symbol s) where
   compare Blank Blank             = EQ
   compare Blank _                 = LT
   compare _ Blank                 = GT
   compare (Symbol s1) (Symbol s2) = compare s1 s2
+
+instance (Pretty a) => Pretty (Tape a) where
+  pretty t = wrap "{" (prettyList $ toList t) "}"
+
+instance Pretty Direction where
+  pretty = show

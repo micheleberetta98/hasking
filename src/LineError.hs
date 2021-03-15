@@ -11,17 +11,18 @@ module LineError
   , (.++)
   ) where
 
-import           Data.List
+import           Data.List (intercalate, sortOn)
+import           Pretty    (Pretty (..))
 
 ------------------------------------------------
 -- Data types
 ------------------------------------------------
 
 -- | An error message with a line (not required) associated
-newtype LineError = LineError (Maybe Int, String)
+newtype LineError = LineError (Maybe Int, String) deriving (Show)
 
 -- | Represents a list of error messages with a line (not required) associated
-newtype ErrorList = ErrorList [LineError]
+newtype ErrorList = ErrorList [LineError] deriving (Show)
 
 ------------------------------------------------
 -- Utils
@@ -66,13 +67,13 @@ ErrorList es1 .++  ErrorList es2 = ErrorList (es1 ++ es2)
 instance Eq LineError where
   LineError a == LineError b = a == b
 
-instance Show LineError where
-  show (LineError (Nothing, s)) = "(!) " ++ s
-  show (LineError (Just l, s))  = "(!) at line " ++ show l ++ ": " ++ s
+instance Pretty LineError where
+  pretty (LineError (Nothing, s)) = "(!) " ++ s
+  pretty (LineError (Just l, s))  = "(!) at line " ++ pretty l ++ ": " ++ s
 
 instance Eq ErrorList where
   ErrorList a == ErrorList b = a == b
 
-instance Show ErrorList where
-  show (ErrorList []) = ""
-  show (ErrorList es) = intercalate "\n" . map show $ sortOn line es
+instance Pretty ErrorList where
+  pretty (ErrorList []) = ""
+  pretty (ErrorList es) = intercalate "\n" . map pretty $ sortOn line es

@@ -2,6 +2,7 @@ module InstructionSpec where
 
 import           Instruction
 import           Parser
+import           Pretty
 import           Test.Hspec
 
 
@@ -14,10 +15,10 @@ instructionTests = describe "Instruction" $ do
       Right i3 = parseInstruction "(s2 20 qx7 L21 S)"
       Right i4 = parseInstruction "(s1 0 s2 . S)"
 
-    show i1 `shouldBe` "(s 0 q 1 R)"
-    show i2 `shouldBe` "(s 0 q 1 R)"
-    show i3 `shouldBe` "(s2 20 qx7 L21 S)"
-    show i4 `shouldBe` "(s1 0 s2 . S)"
+    pretty i1 `shouldBe` "(s 0 q 1 R)"
+    pretty i2 `shouldBe` "(s 0 q 1 R)"
+    pretty i3 `shouldBe` "(s2 20 qx7 L21 S)"
+    pretty i4 `shouldBe` "(s1 0 s2 . S)"
 
   it "should not parse wrong steps" $ do
     let
@@ -42,9 +43,9 @@ instructionTests = describe "Instruction" $ do
       Right c2 = parseInstruction "[FINAL s1 s2 s3]"
       Right c3 = parseInstruction "[FINAL s1]"
 
-    show c1 `shouldBe` "[BEGIN s1]"
-    show c2 `shouldBe` "[FINAL s1 s2 s3]"
-    show c3 `shouldBe` "[FINAL s1]"
+    pretty c1 `shouldBe` "[BEGIN s1]"
+    pretty c2 `shouldBe` "[FINAL s1 s2 s3]"
+    pretty c3 `shouldBe` "[FINAL s1]"
 
   it "should not parse wrong control sequences" $ do
     let
@@ -68,7 +69,7 @@ instructionTests = describe "Instruction" $ do
       Right t2 = parseInstruction "{a b c}"
       Right t3 = parseInstruction "{  s   }"
 
-    show t1 `shouldBe` "{0 0 2}"
-    show t2 `shouldBe` "{a b c}"
-    show t3 `shouldBe` "{s}"
+    pretty t1 `shouldBe` "{0 0 2}"
+    pretty t2 `shouldBe` "{a b c}"
+    pretty t3 `shouldBe` "{s}"
 
