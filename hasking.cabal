@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 230d5cef0ee5f6d922c2b5297a0ebdef8c05d23924de8cb8ed07e995be633050
+-- hash: 10f91063309f21aab0a8b2002eecd0326ec9aaf72feeeb1ab3ecc7ac0b08871a
 
 name:           hasking
-version:        1.0.1
+version:        1.1.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/hasking#readme>
 homepage:       https://github.com/githubuser/hasking#readme
 bug-reports:    https://github.com/githubuser/hasking/issues

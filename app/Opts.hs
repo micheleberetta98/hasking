@@ -5,33 +5,35 @@ import           System.Console.GetOpt (ArgDescr (NoArg, ReqArg),
                                         getOpt, usageInfo)
 
 import           Data.List             (foldl')
+import           Instruction           (Instruction (TapeValue),
+                                        parseInstruction)
 import           System.Environment    (getArgs, getProgName)
-import           System.Exit           (exitSuccess)
+import           System.Exit           (exitFailure, exitSuccess)
 import           System.IO             (hPutStrLn, stderr)
+import           Tape                  (Tape, fromList)
 
 ------------------------------------------------
 -- Data types
 ------------------------------------------------
--- | Command line flags
--- data Flag = Help
---           | Version
---           | Input String
---           | Output String
 
 -- | The command line options
-data Options = Options { input :: IO String, output :: String -> IO () }
+data Options = Options
+  { input  :: IO String
+  , output :: String -> IO ()
+  , tape   :: Maybe (Tape String)
+  }
 
 ------------------------------------------------
 -- Options building
 ------------------------------------------------
 
 -- | Parses the options from the cli
-getOpts :: IO (IO String, String -> IO ())
+getOpts :: IO (IO String, String -> IO (), Maybe (Tape String))
 getOpts = do
   args <- getArgs
   let (actions, _, _) = getOpt RequireOrder options args
   opts <- foldl' (>>=) (return defaultOpts) actions
-  return (input opts, output opts)
+  return (input opts, output opts, tape opts)
 
 ------------------------------------------------
 -- Options definition
@@ -39,7 +41,7 @@ getOpts = do
 
 -- | The default options
 defaultOpts :: Options
-defaultOpts = Options { input = getContents, output = putStrLn }
+defaultOpts = Options { input = getContents, output = putStrLn, tape = Nothing }
 
 -- | The options description
 options :: [OptDescr (Options -> IO Options)]
@@ -50,6 +52,9 @@ options =
     , Option "o" ["output"]
         (ReqArg withOutput "FILE")
         "The output file. If not specified, it will use the standard output."
+    , Option "t" ["tape"]
+        (ReqArg withTape "TAPE")
+        "The initial tape in the format {Symbol, Symbol, ...}. If not specified, it will be searched in the input file."
     , Option "v" ["version"]
         (NoArg printVersion)
         "Print the program version"
@@ -66,10 +71,20 @@ withInput arg opt = return opt{ input = readFile arg }
 withOutput :: Monad m => FilePath -> Options -> m Options
 withOutput arg opt = return opt{ output = writeFile arg }
 
+-- | Sets the initial tape option
+withTape :: String -> Options -> IO Options
+withTape arg opt =
+  case parseInstruction arg of
+    Right (TapeValue t) -> return opt{ tape = Just $ fromList t }
+    _ -> do
+      hPutStrLn stderr "Invalid tape provided"
+      exitFailure
+
+
 -- | Prints the version
 printVersion :: a -> IO b
 printVersion = const $ do
-  hPutStrLn stderr "1.0.1"
+  hPutStrLn stderr "1.1.0"
   exitSuccess
 
 -- | Prints the usage
