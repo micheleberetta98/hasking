@@ -54,7 +54,7 @@ options =
         "The output file. If not specified, it will use the standard output."
     , Option "t" ["tape"]
         (ReqArg withTape "TAPE")
-        "The initial tape in the format {Symbol, Symbol, ...}. If not specified, it will be searched in the input file."
+        "The initial tape in the format {Symbol, Symbol, ...}.\nIt will overwrite any tape in the input file.\nIf not specified, it will be searched in the input file."
     , Option "v" ["version"]
         (NoArg printVersion)
         "Print the program version"
@@ -84,7 +84,7 @@ withTape arg opt =
 -- | Prints the version
 printVersion :: a -> IO b
 printVersion = const $ do
-  hPutStrLn stderr "1.1.0"
+  hPutStrLn stderr "1.1.1"
   exitSuccess
 
 -- | Prints the usage

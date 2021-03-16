@@ -5,10 +5,10 @@ module Code
 
 import           Data.List     (foldl')
 import qualified Data.Map      as M
+import           Errors        (Error (..), ErrorList, LineError, justOne,
+                                linedError, simpleError, (.+), (.++))
 import           Instruction   (Instruction (Control, Step, TapeValue),
                                 parseInstruction)
-import           LineError     (ErrorList, LineError, justOne, linedError,
-                                simpleError, (.+), (.++))
 import           Tape          (Direction, Symbol, Tape)
 import qualified Tape          as T
 import           TuringMachine (FromState, State (State), StateList, ToState,
@@ -55,7 +55,7 @@ parseCode code = (buildCode . parseInstructions . stripComments $ lines' code) >
     buildCode = foldl' (+>) (Right empty)
     parseInstructions = map (format . fmap parseInstruction)
 
-    format :: (Int, Either String Instruction) -> Either LineError LineInstruction
+    format :: (Int, Either Error Instruction) -> Either LineError LineInstruction
     format (l, Left msg) = Left $ linedError msg l
     format (l, Right i)  = Right (l, i)
 
@@ -114,26 +114,26 @@ mvalidate m@(MachineCode tr s ss t) =
   (trans tr ++> initial s ++> finals ss ++> tape t) >> Right m
   where
     trans t
-      | t == M.empty = just $ simpleError "No instructions provided"
+      | t == M.empty = just $ simpleError NoInstructions
       | otherwise    = Right ""
-    initial (State "") = just $ simpleError "No initial state provided"
+    initial (State "") = just $ simpleError NoInitialState
     initial _          = Right ""
-    finals [] = just $ simpleError "No final states provided"
+    finals [] = just $ simpleError NoFinalStates
     finals _  = Right ""
     tape t
-      | null (T.toList t) = just $ simpleError "No tape provided"
+      | null (T.toList t) = just $ simpleError MissingInputTape
       | otherwise         = Right ""
 
 -- | Validates the instruction
 ivalidate :: LineInstruction -> WithError Instruction
 ivalidate (l, i) = ivalidate' i l
   where
-    ivalidate' (Control "BEGIN" [])  = just . linedError "No initial state provided"
+    ivalidate' (Control "BEGIN" [])     = just . linedError NoInitialState
     ivalidate' (Control "BEGIN" states)
-      | length states > 1            = just . linedError "More than one initial state provided"
-    ivalidate' (Control "FINALS" []) = just . linedError "No final states provided"
-    ivalidate' (TapeValue [])        = just . linedError "Empty input tape provided"
-    ivalidate' i                     = const (Right i)
+      | length states > 1               = just . linedError MultiInitialState
+    ivalidate' (Control "FINALS" [])    = just . linedError NoFinalStates
+    ivalidate' (TapeValue [])           = just . linedError EmptyInputTape
+    ivalidate' i                        = const (Right i)
 
 -- | Utility that creates a single `Left (ErrorList [LineError])`
 just :: LineError -> WithError b

@@ -17,6 +17,24 @@ stack run example.txt
 
 There are some tests that you can execute with `stack test`.
 
+## Command line options
+
+The options are as follow
+```
+hasking [-i FILE] [-o FILE] [-t TAPE] [-v] [-h]
+```
+
+| Short | Long        | Meaning                            |
+| ----- | ----------- | ---------------------------------- |
+| `-v`  | `--version` | Prints the version                 |
+| `-h`  | `--help`    | Prints the help page               |
+| `-i`  | `--input`   | The input file (default `stdin`)   |
+| `-o`  | `--output`  | The output file (default `stdout`) |
+| `-t`  | `--tape`    | The initial tape to use            |
+
+The initial tape will overwrite any tape definitions in your file.
+If you provide no initial tape using the `-t` option, its value will be searched in the input file.
+
 ## The language
 
 The file you pass to the machine contains the machine definition. There are some rules:

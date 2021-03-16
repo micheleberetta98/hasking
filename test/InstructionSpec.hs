@@ -30,12 +30,12 @@ instructionTests = describe "Instruction" $ do
       Left i6 = parseInstruction "(s .. q 0 M)"
       Left i7 = parseInstruction "(s .. q 0 M) asd"
 
-    i1 `shouldNotBe` ""
-    i2 `shouldNotBe` ""
-    i3 `shouldNotBe` ""
-    i4 `shouldNotBe` ""
-    i5 `shouldNotBe` ""
-    i6 `shouldNotBe` ""
+    pretty i1 `shouldNotBe` ""
+    pretty i2 `shouldNotBe` ""
+    pretty i3 `shouldNotBe` ""
+    pretty i4 `shouldNotBe` ""
+    pretty i5 `shouldNotBe` ""
+    pretty i6 `shouldNotBe` ""
 
   it "should parse correct control sequences" $ do
     let
@@ -56,12 +56,12 @@ instructionTests = describe "Instruction" $ do
       Left i5 = parseInstruction "[FINAL]"
       Left i6 = parseInstruction "[BEGIN .]"
 
-    i1 `shouldNotBe` ""
-    i2 `shouldNotBe` ""
-    i3 `shouldNotBe` ""
-    i4 `shouldNotBe` ""
-    i5 `shouldNotBe` ""
-    i6 `shouldNotBe` ""
+    pretty i1 `shouldNotBe` ""
+    pretty i2 `shouldNotBe` ""
+    pretty i3 `shouldNotBe` ""
+    pretty i4 `shouldNotBe` ""
+    pretty i5 `shouldNotBe` ""
+    pretty i6 `shouldNotBe` ""
 
   it "should parse correct tapes" $ do
     let

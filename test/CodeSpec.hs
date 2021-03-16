@@ -2,7 +2,7 @@ module CodeSpec where
 
 import           Code
 import qualified Data.Map      as M
-import           LineError     (empty)
+import           Errors        (empty)
 import           Tape          hiding (empty)
 import           Test.Hspec
 import           TuringMachine

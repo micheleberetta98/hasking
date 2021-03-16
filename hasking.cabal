@@ -4,16 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 10f91063309f21aab0a8b2002eecd0326ec9aaf72feeeb1ab3ecc7ac0b08871a
+-- hash: 33b54ef4e0371c5f0bc145c92194fe1b348d94c6652490279892c46e74d2773d
 
 name:           hasking
-version:        1.1.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/hasking#readme>
-homepage:       https://github.com/githubuser/hasking#readme
-bug-reports:    https://github.com/githubuser/hasking/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2021 Author name here
+version:        1.1.1
+description:    Please see the README on GitHub at <https://github.com/micheleberetta98/hasking#readme>
+homepage:       https://github.com/micheleberetta98/hasking#readme
+bug-reports:    https://github.com/micheleberetta98/hasking/issues
+author:         Michele Beretta
+maintainer:     beretta.m98@gmail.com
+copyright:      2021 Michele Beretta
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -22,13 +22,13 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/hasking
+  location: https://github.com/micheleberetta98/hasking
 
 library
   exposed-modules:
       Code
+      Errors
       Instruction
-      LineError
       Parser
       Pretty
       Tape

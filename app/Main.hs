@@ -28,7 +28,7 @@ runMachine code = do
 -- | Adds the tape to the provided code
 addTape :: Maybe (Tape String) -> String -> String
 addTape Nothing s  = s
-addTape (Just t) s = pretty t ++ "\n" ++ s
+addTape (Just t) s = s ++ "\n" ++ pretty t
 
 -- | Formats the final tape in a nice way, or it prints the errors
 result :: (Pretty s, Pretty a, Pretty t) => Either (State s, Symbol a) (Tape t) -> IO [Char]
