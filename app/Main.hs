@@ -34,6 +34,6 @@ addTape (Just t) s = s ++ "\n" ++ pretty t
 result :: (Pretty s, Pretty a, Pretty t) => Either (State s, Symbol a) (Tape t) -> IO [Char]
 result (Left (s, symbol)) = do
   hPutStrLn stderr $ "(?) invalid state found: (state = " ++ pretty s ++ ", symbol = " ++ pretty symbol ++ ")"
-  return ""
+  exitFailure
 result (Right t) = do
   return $ pretty t
