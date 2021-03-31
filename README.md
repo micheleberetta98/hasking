@@ -43,7 +43,7 @@ The file you pass to the machine contains the machine definition. There are some
 * The ***state*** of the machine is a series of alphanumeric characters that starts with a letter
 * The ***direction*** is one of `L`, `R` or `S` (left, right or stay)
 * The initial tape is comprised of non-blank symbols
-* ***Comments*** are everything that follows a `#`
+* ***Comments*** are everything that follows a `;`
 
 Given these, there are only 3 types of lines: state transitions, control instructions and the initial tape value.
 

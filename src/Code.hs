@@ -68,7 +68,7 @@ lines' = zip [1..] . lines
 stripComments :: [LineCode] -> [LineCode]
 stripComments = filter (not . isEmpty) . map (fmap stripComment)
   where
-    stripComment = takeWhile (/= '#')
+    stripComment = takeWhile (/= ';')
     isEmpty = null . dropWhile isSpace . snd
 
 -- | Updates the machine code given a single instruction
