@@ -39,10 +39,8 @@ If you provide no initial tape using the `-t` option, its value will be searched
 
 The file you pass to the machine contains the machine definition. There are some rules:
 * Each line is one instruction
-* *Atoms* are strings of alphanumeric characters
-* *Identifiers* are just atoms that start with a letter
-* The input and machine alphabet are comprised of ***symbols***, which can be either an *atom* or the special *blank symbol* `.` (dot)
-* The ***state*** of the machine is an *identifier*
+* The input and machine alphabet are comprised of ***symbols***, which can be either a sequence of alphanumeric characters or the special *blank symbol* `.` (dot)
+* The ***state*** of the machine is a series of alphanumeric characters that starts with a letter
 * The ***direction*** is one of `L`, `R` or `S` (left, right or stay)
 * The initial tape is comprised of non-blank symbols
 * ***Comments*** are everything that follows a `#`
