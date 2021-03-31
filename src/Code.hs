@@ -3,6 +3,7 @@ module Code
   , parseCode
   ) where
 
+import           Data.Char     (isSpace)
 import           Data.List     (foldl')
 import qualified Data.Map      as M
 import           Errors        (Error (..), ErrorList, LineError, justOne,
@@ -65,8 +66,10 @@ lines' = zip [1..] . lines
 
 -- | Removes a comment from a line
 stripComments :: [LineCode] -> [LineCode]
-stripComments = filter notEmpty . map (fmap (takeWhile (/= '#')))
-  where notEmpty (_, l) = dropWhile (`elem` " \t") l /= ""
+stripComments = filter (not . isEmpty) . map (fmap stripComment)
+  where
+    stripComment = takeWhile (/= '#')
+    isEmpty = null . dropWhile isSpace . snd
 
 -- | Updates the machine code given a single instruction
 updateCode :: MachineCode -> Instruction -> MachineCode
