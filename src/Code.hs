@@ -66,7 +66,7 @@ lines' = zip [1..] . lines
 -- | Removes a comment from a line
 stripComments :: [LineCode] -> [LineCode]
 stripComments = filter notEmpty . map (fmap (takeWhile (/= '#')))
-  where notEmpty (_, l) = l /= ""
+  where notEmpty (_, l) = dropWhile (`elem` " \t") l /= ""
 
 -- | Updates the machine code given a single instruction
 updateCode :: MachineCode -> Instruction -> MachineCode
