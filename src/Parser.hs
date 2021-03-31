@@ -107,9 +107,9 @@ instance Functor Parser where
 
 instance Applicative Parser where
   pure x = Parser (\s -> Just (x, s))
-  Parser p1 <*> p2 = Parser p3
+  p1 <*> p2 = Parser p3
     where
-      p3 s = p1 s >>= runP2
+      p3 s = runParser p1 s >>= runP2
       runP2 (f, xs') = runParser (f <$> p2) xs'
 
 instance Alternative Parser where

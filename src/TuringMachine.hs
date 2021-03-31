@@ -42,7 +42,12 @@ type Transitions s a = Map (FromState s a) (ToState s a)
 -- - A list of final `State`s
 -- - The `Tape` to analyze
 -- It returns `Nothing` if it ends up in an undefined state, or `Just` the resulting `Tape`
-machine :: (Ord s, Eq s, Ord a) => Transitions s a -> State s -> StateList  s-> Tape a -> Either (FromState s a) (Tape a)
+machine :: (Ord s, Eq s, Ord a) =>
+  Transitions s a
+  -> State s
+  -> StateList  s
+  -> Tape a
+  -> Either (FromState s a) (Tape a)
 machine t st finals tape
   | st `elem` finals = Right tape
   | otherwise        = do
