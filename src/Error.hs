@@ -1,8 +1,8 @@
-{-# LANGUAGE FlexibleInstances #-}
 module Error
   ( Error(..)
   , ErrorType(..)
   , ErrorList
+  , fromList
   , singleton
   , len
   , line
@@ -39,6 +39,10 @@ newtype ErrorList = ErrorList [Error] deriving (Show, Eq)
 ------------------------------------------------
 -- Utils
 ------------------------------------------------
+
+-- | Builds an `ErrorList` from a list of `Errors`
+fromList :: [Error] -> ErrorList
+fromList = ErrorList
 
 -- | Creates a list with a single error
 singleton :: Error -> ErrorList

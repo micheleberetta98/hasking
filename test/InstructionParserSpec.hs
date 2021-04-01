@@ -1,13 +1,13 @@
-module InstructionSpec where
+module InstructionParserSpec where
 
-import           Instruction
+import           InstructionParser
 import           Parser
 import           Pretty
 import           Test.Hspec
 
 
 instructionTests :: SpecWith ()
-instructionTests = describe "Instruction" $ do
+instructionTests = describe "InstructionParser" $ do
   it "should parse correct steps" $ do
     let
       Right i1 = parseInstruction "(s 0 q 1 R)"

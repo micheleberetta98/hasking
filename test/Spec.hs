@@ -1,7 +1,7 @@
 import           Test.Hspec
 
 import           CodeSpec          (codeTests)
-import           InstructionSpec   (instructionTests)
+import           InstructionParserSpec   (instructionTests)
 import           ParserSpec        (parserTests)
 import           TapeSpec          (tapeTests)
 import           TuringMachineSpec (turingMachineTests)

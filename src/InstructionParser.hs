@@ -1,4 +1,4 @@
-module Instruction
+module InstructionParser
   ( Instruction(..)
   , parseInstruction
   ) where

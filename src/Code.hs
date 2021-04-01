@@ -3,17 +3,17 @@ module Code
   , parseCode
   ) where
 
-import           Data.Char     (isSpace)
-import           Data.List     (foldl')
-import qualified Data.Map      as M
-import           Error         (Error (..), ErrorList, ErrorType (..),
-                                singleton)
-import           Instruction   (Instruction (Control, Step, TapeValue),
-                                parseInstruction)
-import           Tape          (Direction, Symbol, Tape)
-import qualified Tape          as T
-import           TuringMachine (FromState, State (State), StateList, ToState,
-                                Transitions)
+import           Data.Bifunctor    (Bifunctor (bimap))
+import           Data.Char         (isSpace)
+import           Data.Either       (isLeft)
+import           Data.List         (foldl', partition)
+import qualified Data.Map          as M
+import           Error             (Error (..), ErrorList, ErrorType (..),
+                                    fromList, singleton)
+import           InstructionParser (Instruction (..), parseInstruction)
+import           Tape              (Direction, Symbol, Tape)
+import qualified Tape              as T
+import           TuringMachine     (From, State (State), To, Transitions)
 
 ------------------------------------------------
 -- Data types
@@ -23,53 +23,95 @@ import           TuringMachine (FromState, State (State), StateList, ToState,
 type Code = String
 
 -- | A line with its number
-type LineCode = (Int, String)
+type Line = (Int, String)
 
--- | An instruction with its line number
-type LineInstruction = (Int, Instruction)
-
-type From = FromState String String
-type To = ToState String String
+-- | Represents the possible machine specification, or the errors that prevented its construction
 type WithErrors = Either ErrorList
 
 -- | The whole machine specification, derived from a piece of code
 data MachineCode = MachineCode
   { transitions  :: Transitions String String
   , initialState :: State String
-  , finalStates  :: StateList String
+  , finalStates  :: [State String]
   , initialTape  :: Tape String
   } deriving (Show, Eq)
 
 ------------------------------------------------
--- Functions
+-- Functions for code parsing
 ------------------------------------------------
 
--- | An empty `MachineCode` structure
-emptyC :: MachineCode
-emptyC = MachineCode M.empty (State "") [] T.empty
+-- -- | An empty `MachineCode` structure
+-- empty :: MachineCode
+-- empty = MachineCode M.empty (State "") [] T.empty
 
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
--- It returns `Nothing` if something goes wrong
-parseCode :: Code -> WithErrors MachineCode
-parseCode code = (buildCode . parseInstructions . stripComments $ lines' code) >>= mvalidate
+-- It returns `Left ErrorList` if something goes wrong
+parseCode :: Code -> Either ErrorList MachineCode
+parseCode = buildCode . map (fmap parseInstruction) . sanitizeCode
+
+-- | Removes the comments and the empty lines from the code, giving back only
+-- the interesting bits
+sanitizeCode :: Code -> [Line]
+sanitizeCode = filter (not . isEmpty) . map stripComment . addLineNumbers
   where
-    buildCode = foldl' (+>) (Right emptyC)
-    parseInstructions = map (format . fmap parseInstruction)
+    addLineNumbers = zip [1..] . lines
+    stripComment = fmap (dropWhile isSpace . takeWhile (/= ';'))
+    isEmpty = null . snd
 
-    format :: (Int, Either ErrorType Instruction) -> Either Error LineInstruction
-    format (l, Left etype) = Left $ LineError l etype
-    format (l, Right i)    = Right (l, i)
+-- | Builds the `MachineCode` structure if all the instructions are correct, or it returns
+-- a `Left ErrorList` with all the errors
+buildCode :: [(Int, Either ErrorType Instruction)] -> Either ErrorList MachineCode
+buildCode ls =
+  let (errs, instructions) = splitErrors ls
+  in if null errs
+    then buildMachine instructions
+    else Left $ fromList errs
 
--- | Add line numbers to the code
-lines' :: Code -> [LineCode]
-lines' = zip [1..] . lines
-
--- | Removes a comment from a line
-stripComments :: [LineCode] -> [LineCode]
-stripComments = filter (not . isEmpty) . map (fmap stripComment)
+-- | Used to separate all the errors and instructions from
+splitErrors :: [(Int, Either ErrorType Instruction)] -> ([Error], [Instruction])
+splitErrors = bimap toErrors toInstructions . partition isLeft . map (addLine . fmap validate)
   where
-    stripComment = takeWhile (/= ';')
-    isEmpty = null . dropWhile isSpace . snd
+    addLine (_, Right x)  = Right x
+    addLine (l, Left err) = Left $ LineError l err
+
+    toErrors = map (\(Left x) -> x)
+    toInstructions = map (\(Right x) -> x)
+
+-- | Builds the `MachineCode` given a list of instructions and their lines
+buildMachine :: [Instruction] -> Either ErrorList MachineCode
+buildMachine = validateMachine . foldl' updateCode empty
+  where
+    empty = MachineCode M.empty (State "") [] T.empty
+    validateMachine m
+      | hasInputTape m = Right m
+      | otherwise = Left . singleton $ SimpleError MissingInputTape
+
+------------------------------------------------
+-- Validations
+------------------------------------------------
+
+-- | It validates a single instruction, that could have been parsed correctly or not
+validate :: Either ErrorType Instruction -> Either ErrorType Instruction
+validate i = i >>= validate'
+  where
+    validate' (Control "BEGIN" [])    = Left NoInitialState
+    validate' i@(Control "BEGIN" [s]) = Right i
+    validate' (Control "BEGIN" ss)    = Left MultiInitialState
+    validate' (Control "FINALS" [])   = Left NoFinalStates
+    validate' (TapeValue [])          = Left EmptyInputTape
+    validate' i                       = Right i
+
+-- | Checks wether the initial tape is present or not
+hasInputTape :: MachineCode -> Bool
+hasInputTape = not . null . T.toList . initialTape
+
+------------------------------------------------
+-- Utilities
+------------------------------------------------
+
+-- | Utility used to combine two `Left a` as if they were a Semigroup
+(<.>) :: Monoid a => Either a b -> Either a c -> Either a d
+Left e1 <.> Left e2 = Left (e1 <> e2)
 
 -- | Updates the machine code given a single instruction
 updateCode :: MachineCode -> Instruction -> MachineCode
@@ -79,65 +121,12 @@ updateCode c (TapeValue tape)      = c{ initialTape = T.fromList tape }
 updateCode c s                     = addTransition (split s) c
 
 -- | Inserts a new transitions into the existing ones
-addTransition :: (From, To) -> MachineCode -> MachineCode
+addTransition :: (From String String, To String String) -> MachineCode -> MachineCode
 addTransition (from, to) c = c{ transitions = M.insert from to (transitions c) }
 
--- | It converts a `Step` instruction into a tuple made of `FromState` and `ToState`
-split :: Instruction -> (From, To)
+-- | It converts a `Step` instruction into a tuple made of `From` and `To`
+split :: Instruction -> (From String String, To String String)
 split (Step s1 v1 s2 v2 d) = (from, to)
   where
     from = (s1, v1)
     to = (s2, v2, d)
-
-------------------------------------------------
--- Utils to combine errors
-------------------------------------------------
-
--- | Combines an `WithErrors MachineCode` with a `Either Error LineInstruction`
-(+>) :: WithErrors MachineCode -> Either Error LineInstruction -> WithErrors MachineCode
-Left es +> Left e  = Left (es <> singleton e)
-Left es +> Right i = Left es ++> ivalidate i
-Right c +> Left e  = Left (singleton e)
-Right c +> Right i = updateCode c <$> ivalidate i
-
--- | Combines two `WithErrors` together
-(++>) :: WithErrors a -> WithErrors b -> WithErrors a
-Left es1 ++> Left es2 = Left (es1 <> es2)
-Right _ ++> Left es   = Left es
-Left es ++> Right _   = Left es
-Right x ++> Right _   = Right x
-
-------------------------------------------------
--- Validations
-------------------------------------------------
-
--- | Validates the final machine code
-mvalidate :: MachineCode -> WithErrors MachineCode
-mvalidate m@(MachineCode tr s ss t) =
-  (trans tr ++> initial s ++> finals ss ++> tape t) >> Right m
-  where
-    trans t
-      | t == M.empty = just $ SimpleError NoInstructions
-      | otherwise    = Right ""
-    initial (State "") = just $ SimpleError NoInitialState
-    initial _          = Right ""
-    finals [] = just $ SimpleError NoFinalStates
-    finals _  = Right ""
-    tape t
-      | null (T.toList t) = just $ SimpleError MissingInputTape
-      | otherwise         = Right ""
-
--- | Validates the instruction
-ivalidate :: LineInstruction -> WithErrors Instruction
-ivalidate (l, i) = ivalidate' i
-  where
-    ivalidate' (Control "BEGIN" [])     = just $ LineError l NoInitialState
-    ivalidate' (Control "BEGIN" states)
-      | length states > 1               = just $ LineError l MultiInitialState
-    ivalidate' (Control "FINALS" [])    = just $ LineError l NoFinalStates
-    ivalidate' (TapeValue [])           = just $ LineError l EmptyInputTape
-    ivalidate' i                        = Right i
-
--- | Utility that creates a single `Left ErrorList`
-just :: Error -> WithErrors b
-just = Left . singleton
