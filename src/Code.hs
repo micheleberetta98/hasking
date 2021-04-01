@@ -22,10 +22,10 @@ import           TuringMachine     (From, State (State), To, Transitions)
 -- | The raw lines that define the behaviour of the machine, each line defines an `Instruction`
 type Code = String
 
--- | A line with its number
-type Line = (Int, String)
+-- | A type with its line number
+type WithLine a = (Int, a)
 
--- | Represents the possible machine specification, or the errors that prevented its construction
+type WithError = Either ErrorType
 type WithErrors = Either ErrorList
 
 -- | The whole machine specification, derived from a piece of code
@@ -46,12 +46,12 @@ data MachineCode = MachineCode
 
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Left ErrorList` if something goes wrong
-parseCode :: Code -> Either ErrorList MachineCode
+parseCode :: Code -> WithErrors MachineCode
 parseCode = buildCode . map (fmap parseInstruction) . sanitizeCode
 
 -- | Removes the comments and the empty lines from the code, giving back only
 -- the interesting bits
-sanitizeCode :: Code -> [Line]
+sanitizeCode :: Code -> [WithLine String]
 sanitizeCode = filter (not . isEmpty) . map stripComment . addLineNumbers
   where
     addLineNumbers = zip [1..] . lines
@@ -60,7 +60,7 @@ sanitizeCode = filter (not . isEmpty) . map stripComment . addLineNumbers
 
 -- | Builds the `MachineCode` structure if all the instructions are correct, or it returns
 -- a `Left ErrorList` with all the errors
-buildCode :: [(Int, Either ErrorType Instruction)] -> Either ErrorList MachineCode
+buildCode :: [WithLine (WithError Instruction)] -> WithErrors MachineCode
 buildCode ls =
   let (errs, instructions) = splitErrors ls
   in if null errs
@@ -68,7 +68,7 @@ buildCode ls =
     else Left $ fromList errs
 
 -- | Used to separate all the errors and instructions from
-splitErrors :: [(Int, Either ErrorType Instruction)] -> ([Error], [Instruction])
+splitErrors :: [WithLine (WithError Instruction)] -> ([Error], [Instruction])
 splitErrors = bimap toErrors toInstructions . partition isLeft . map (addLine . fmap validate)
   where
     addLine (_, Right x)  = Right x
@@ -78,11 +78,11 @@ splitErrors = bimap toErrors toInstructions . partition isLeft . map (addLine . 
     toInstructions = map (\(Right x) -> x)
 
 -- | Builds the `MachineCode` given a list of instructions and their lines
-buildMachine :: [Instruction] -> Either ErrorList MachineCode
-buildMachine = validateMachine . foldl' updateCode empty
+buildMachine :: [Instruction] -> WithErrors MachineCode
+buildMachine = validateInputTape . foldl' updateCode empty
   where
     empty = MachineCode M.empty (State "") [] T.empty
-    validateMachine m
+    validateInputTape m
       | hasInputTape m = Right m
       | otherwise = Left . singleton $ SimpleError MissingInputTape
 
@@ -108,10 +108,6 @@ hasInputTape = not . null . T.toList . initialTape
 ------------------------------------------------
 -- Utilities
 ------------------------------------------------
-
--- | Utility used to combine two `Left a` as if they were a Semigroup
-(<.>) :: Monoid a => Either a b -> Either a c -> Either a d
-Left e1 <.> Left e2 = Left (e1 <> e2)
 
 -- | Updates the machine code given a single instruction
 updateCode :: MachineCode -> Instruction -> MachineCode
