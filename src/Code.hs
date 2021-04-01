@@ -6,8 +6,8 @@ module Code
 import           Data.Char     (isSpace)
 import           Data.List     (foldl')
 import qualified Data.Map      as M
-import           Errors        (Error (..), ErrorList, LineError, justOne,
-                                linedError, simpleError, (.+), (.++))
+import           Error         (Error (..), ErrorList, ErrorType (..),
+                                singleton)
 import           Instruction   (Instruction (Control, Step, TapeValue),
                                 parseInstruction)
 import           Tape          (Direction, Symbol, Tape)
@@ -30,7 +30,7 @@ type LineInstruction = (Int, Instruction)
 
 type From = FromState String String
 type To = ToState String String
-type WithError = Either ErrorList
+type WithErrors = Either ErrorList
 
 -- | The whole machine specification, derived from a piece of code
 data MachineCode = MachineCode
@@ -45,20 +45,20 @@ data MachineCode = MachineCode
 ------------------------------------------------
 
 -- | An empty `MachineCode` structure
-empty :: MachineCode
-empty = MachineCode M.empty (State "") [] T.empty
+emptyC :: MachineCode
+emptyC = MachineCode M.empty (State "") [] T.empty
 
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Nothing` if something goes wrong
-parseCode :: Code -> WithError MachineCode
+parseCode :: Code -> WithErrors MachineCode
 parseCode code = (buildCode . parseInstructions . stripComments $ lines' code) >>= mvalidate
   where
-    buildCode = foldl' (+>) (Right empty)
+    buildCode = foldl' (+>) (Right emptyC)
     parseInstructions = map (format . fmap parseInstruction)
 
-    format :: (Int, Either Error Instruction) -> Either LineError LineInstruction
-    format (l, Left msg) = Left $ linedError msg l
-    format (l, Right i)  = Right (l, i)
+    format :: (Int, Either ErrorType Instruction) -> Either Error LineInstruction
+    format (l, Left etype) = Left $ LineError l etype
+    format (l, Right i)    = Right (l, i)
 
 -- | Add line numbers to the code
 lines' :: Code -> [LineCode]
@@ -93,16 +93,16 @@ split (Step s1 v1 s2 v2 d) = (from, to)
 -- Utils to combine errors
 ------------------------------------------------
 
--- | Combines an `WithError MachineCode` with a `Either LineError LineInstruction`
-(+>) :: WithError MachineCode -> Either LineError LineInstruction -> WithError MachineCode
-Left es +> Left e  = Left (es .+ e)
+-- | Combines an `WithErrors MachineCode` with a `Either Error LineInstruction`
+(+>) :: WithErrors MachineCode -> Either Error LineInstruction -> WithErrors MachineCode
+Left es +> Left e  = Left (es <> singleton e)
 Left es +> Right i = Left es ++> ivalidate i
-Right c +> Left e  = just e
+Right c +> Left e  = Left (singleton e)
 Right c +> Right i = updateCode c <$> ivalidate i
 
--- | Combines two `WithError` together
-(++>) :: WithError a -> WithError b -> WithError a
-Left es1 ++> Left es2 = Left (es1 .++ es2)
+-- | Combines two `WithErrors` together
+(++>) :: WithErrors a -> WithErrors b -> WithErrors a
+Left es1 ++> Left es2 = Left (es1 <> es2)
 Right _ ++> Left es   = Left es
 Left es ++> Right _   = Left es
 Right x ++> Right _   = Right x
@@ -112,32 +112,32 @@ Right x ++> Right _   = Right x
 ------------------------------------------------
 
 -- | Validates the final machine code
-mvalidate :: MachineCode -> WithError MachineCode
+mvalidate :: MachineCode -> WithErrors MachineCode
 mvalidate m@(MachineCode tr s ss t) =
   (trans tr ++> initial s ++> finals ss ++> tape t) >> Right m
   where
     trans t
-      | t == M.empty = just $ simpleError NoInstructions
+      | t == M.empty = just $ SimpleError NoInstructions
       | otherwise    = Right ""
-    initial (State "") = just $ simpleError NoInitialState
+    initial (State "") = just $ SimpleError NoInitialState
     initial _          = Right ""
-    finals [] = just $ simpleError NoFinalStates
+    finals [] = just $ SimpleError NoFinalStates
     finals _  = Right ""
     tape t
-      | null (T.toList t) = just $ simpleError MissingInputTape
+      | null (T.toList t) = just $ SimpleError MissingInputTape
       | otherwise         = Right ""
 
 -- | Validates the instruction
-ivalidate :: LineInstruction -> WithError Instruction
-ivalidate (l, i) = ivalidate' i l
+ivalidate :: LineInstruction -> WithErrors Instruction
+ivalidate (l, i) = ivalidate' i
   where
-    ivalidate' (Control "BEGIN" [])     = just . linedError NoInitialState
+    ivalidate' (Control "BEGIN" [])     = just $ LineError l NoInitialState
     ivalidate' (Control "BEGIN" states)
-      | length states > 1               = just . linedError MultiInitialState
-    ivalidate' (Control "FINALS" [])    = just . linedError NoFinalStates
-    ivalidate' (TapeValue [])           = just . linedError EmptyInputTape
-    ivalidate' i                        = const (Right i)
+      | length states > 1               = just $ LineError l MultiInitialState
+    ivalidate' (Control "FINALS" [])    = just $ LineError l NoFinalStates
+    ivalidate' (TapeValue [])           = just $ LineError l EmptyInputTape
+    ivalidate' i                        = Right i
 
--- | Utility that creates a single `Left (ErrorList [LineError])`
-just :: LineError -> WithError b
-just msg = Left $ justOne msg
+-- | Utility that creates a single `Left ErrorList`
+just :: Error -> WithErrors b
+just = Left . singleton

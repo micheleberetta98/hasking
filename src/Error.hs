@@ -1,15 +1,12 @@
-module Errors
+{-# LANGUAGE FlexibleInstances #-}
+module Error
   ( Error(..)
-  , LineError
+  , ErrorType(..)
   , ErrorList
-  , empty
-  , justOne
-  , simpleError
-  , linedError
+  , singleton
+  , len
   , line
-  , errorMsg
-  , (.+)
-  , (.++)
+  , message
   ) where
 
 import           Data.List (intercalate, sortOn)
@@ -20,7 +17,7 @@ import           Pretty    (Pretty (..))
 ------------------------------------------------
 
 -- | The possible errors
-data Error =
+data ErrorType =
   NoInstructions            -- The absence of any instruction in the form (s v s v d)
   | NoInitialState          -- No initial state has been specified
   | NoFinalStates           -- No final state has been specified
@@ -32,53 +29,46 @@ data Error =
   | UnrecognizedChars       -- There are some characters after the instruction (that are not a comment)
   deriving (Show, Eq)
 
--- | An error message with a line (not required) associated
-newtype LineError = LineError (Maybe Int, Error) deriving (Show, Eq)
+-- | An error can be a message with a line, or just a generic message
+data Error = SimpleError ErrorType | LineError Int ErrorType
+  deriving (Show, Eq)
 
--- | Represents a list of error messages with a line (not required) associated
-newtype ErrorList = ErrorList [LineError] deriving (Show, Eq)
+-- | A list of errors
+newtype ErrorList = ErrorList [Error] deriving (Show, Eq)
 
 ------------------------------------------------
 -- Utils
 ------------------------------------------------
 
--- | An empty error list
-empty :: ErrorList
-empty = ErrorList []
-
 -- | Creates a list with a single error
-justOne :: LineError -> ErrorList
-justOne le = ErrorList [le]
+singleton :: Error -> ErrorList
+singleton le = ErrorList [le]
 
--- | Creates a simple error without a line
-simpleError :: Error -> LineError
-simpleError msg = LineError (Nothing, msg)
+-- | Gets the number of errors in the `ErrorList`
+len :: ErrorList -> Int
+len (ErrorList es) = length es
 
--- | Creates an error with a line
-linedError :: Error -> Int -> LineError
-linedError msg l = LineError (Just l, msg)
+-- | Retrieves the line of an `Error`
+line :: Error -> Maybe Int
+line (SimpleError _) = Nothing
+line (LineError l _) = Just l
 
--- | Retrieves the line of a `LineError`
-line :: LineError -> Maybe Int
-line (LineError (l, _)) = l
-
--- | Retrieves the message of a `LineError`
-errorMsg :: LineError -> Error
-errorMsg (LineError (_, s)) = s
-
--- | Adds an error to the error list
-(.+) :: ErrorList -> LineError -> ErrorList
-es .+ le = es .++ justOne le
-
--- | Combines two ErrorList together
-(.++) :: ErrorList -> ErrorList -> ErrorList
-ErrorList es1 .++  ErrorList es2 = ErrorList (es1 ++ es2)
+-- | Retrieves the message of an `Error`
+message :: Error -> ErrorType
+message (SimpleError msg) = msg
+message (LineError _ msg) = msg
 
 ------------------------------------------------
 -- Instances
 ------------------------------------------------
 
-instance Pretty Error where
+instance Semigroup ErrorList where
+  (ErrorList e1) <> (ErrorList e2) = ErrorList (e1 ++ e2)
+
+instance Monoid ErrorList where
+  mempty = ErrorList []
+
+instance Pretty ErrorType where
   pretty NoInstructions         = "No instructions provided"
   pretty NoInitialState         = "Missing initial state"
   pretty NoFinalStates          = "Missing final states"
@@ -89,9 +79,9 @@ instance Pretty Error where
   pretty InvalidInstruction     = "Invalid instruction"
   pretty UnrecognizedChars      = "Unrecognized characters after the instruction"
 
-instance Pretty LineError where
-  pretty (LineError (Nothing, s)) = "(!) " ++ pretty s
-  pretty (LineError (Just l, s))  = "(!) at line " ++ pretty l ++ ": " ++ pretty s
+instance Pretty Error where
+  pretty (SimpleError s) = "(!) " ++ pretty s
+  pretty (LineError l s) = "(!) at line " ++ pretty l ++ ": " ++ pretty s
 
 instance Pretty ErrorList where
   pretty (ErrorList []) = ""

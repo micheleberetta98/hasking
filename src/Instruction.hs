@@ -5,7 +5,7 @@ module Instruction
 
 import           Control.Applicative (Alternative ((<|>)))
 import           Data.Functor        (($>))
-import           Errors              (Error (InvalidInstruction, UnrecognizedChars))
+import           Error               (ErrorType (InvalidInstruction, UnrecognizedChars))
 import           Parser              (Parser (..), astring, atom, char,
                                       identifier, spaced, spaced1, zeroOrMore)
 import           Pretty              (Pretty (..), prettyList, wrap)
@@ -47,7 +47,7 @@ data Instruction =
 -- | Parses an instruction in the form  of a step such as `(fromState valueRead toState valueWritten dir)`
 -- or in the form of a control such as `[NAME s1 s2 s3 ...]`
 -- parseInstruction :: String -> Instruction
-parseInstruction :: String -> Either Error Instruction
+parseInstruction :: String -> Either ErrorType Instruction
 parseInstruction s =
   case runParser (step <|> control <|> tape) s of
     Just (i, "") -> Right i
