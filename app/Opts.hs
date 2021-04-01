@@ -84,7 +84,7 @@ withTape arg opt =
 -- | Prints the version
 printVersion :: a -> IO b
 printVersion = const $ do
-  hPutStrLn stderr "1.1.3"
+  hPutStrLn stderr "1.1.4"
   exitSuccess
 
 -- | Prints the usage
