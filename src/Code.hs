@@ -1,6 +1,6 @@
 module Code
   ( MachineCode(..)
-  , parseCode
+  , fromCode
   ) where
 
 import           Data.Bifunctor    (Bifunctor (bimap))
@@ -46,8 +46,8 @@ data MachineCode = MachineCode
 
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Left ErrorList` if something goes wrong
-parseCode :: Code -> WithErrors MachineCode
-parseCode = build . map (fmap parseInstruction) . sanitize
+fromCode :: Code -> WithErrors MachineCode
+fromCode = build . map (fmap parseInstruction) . sanitize
 
 -- | Removes the comments and the empty lines from the code, giving back only
 -- the interesting bits

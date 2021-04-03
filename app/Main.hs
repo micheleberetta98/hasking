@@ -1,6 +1,6 @@
 module Main (main) where
 
-import           Code          (MachineCode (MachineCode), parseCode)
+import           Code          (MachineCode (MachineCode), fromCode)
 import           Opts          (getOpts)
 import           Pretty        (Pretty (..), prettyList, wrap)
 import           System.Exit   (exitFailure)
@@ -17,7 +17,7 @@ main = do
 -- | Runs the machine with the specified code
 runMachine :: String -> IO String
 runMachine code = do
-  case parseCode code of
+  case fromCode code of
     Left errors -> do
       hPutStrLn stderr $ pretty errors
       exitFailure

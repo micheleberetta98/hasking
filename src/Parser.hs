@@ -1,16 +1,14 @@
 module Parser
   ( Parser(runParser)
+  , alpha
+  , alphaNum
   , char
-  , integer
-  , spaces
-  , spaces1
-  , astring
   , identifier
-  , spaced
-  , spaced1
-  , zeroOrMore
-  , oneOrMore
+  , anyOf
   , satisfy
+  , spaced
+  , spaces
+  , zeroOrMore
   ) where
 
 import           Control.Applicative (Alternative (empty, (<|>)),
@@ -44,28 +42,21 @@ satisfy p = Parser f
 char :: Char -> Parser Char
 char c = satisfy (== c)
 
--- | Parser for an integer
-integer :: Parser Int
-integer = Parser f
-  where
-    f [] = Nothing
-    f xs =
-      case ns of
-        "" -> Nothing
-        ns -> Just (read ns, rest)
-      where (ns, rest) = span isDigit xs
-
 -- | Parses a series of zero or more spaces
 spaces :: Parser String
 spaces = zeroOrMore (satisfy isSpace)
 
--- | Parses a series of one or more spaces
-spaces1 :: Parser String
-spaces1 = oneOrMore (satisfy isSpace)
-
 -- | Parses a series of alphabetic characters
-astring :: Parser String
-astring = oneOrMore (satisfy isAlpha)
+alpha :: Parser String
+alpha = oneOrMore (satisfy isAlpha)
+
+-- | Parses a series of alphanumberic characters
+alphaNum :: Parser String
+alphaNum = oneOrMore (satisfy isAlphaNum)
+
+-- | Parses one or more of the specified characters
+anyOf :: String -> Parser String
+anyOf elems = oneOrMore $ satisfy (`elem` elems)
 
 -- | Parses an identifier, which is given by a letter followed by zero or more
 -- letters or numbers
@@ -76,11 +67,6 @@ identifier = (:) <$> satisfy isAlpha <*> zeroOrMore (satisfy isAlphaNum)
 -- spaces (or no spaces) around
 spaced :: Parser a -> Parser a
 spaced p = spaces *> p <* spaces
-
--- | Utility to transform a parser `p` into a parser of the same type, but with
--- spaces (or no spaces) before and at least 1 space after
-spaced1 :: Parser a -> Parser a
-spaced1 p = spaces *> p <* spaces1
 
 ------------------------------------------------
 -- Repetitions

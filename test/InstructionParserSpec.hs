@@ -53,15 +53,13 @@ instructionTests = describe "InstructionParser" $ do
       Left i2 = parseInstruction "[s 0 q 1 R]"
       Left i3 = parseInstruction "(BEGIN s)"
       Left i4 = parseInstruction "[begin12 s]"
-      Left i5 = parseInstruction "[FINAL]"
-      Left i6 = parseInstruction "[BEGIN .]"
+      Left i5 = parseInstruction "[BEGIN .]"
 
     pretty i1 `shouldNotBe` ""
     pretty i2 `shouldNotBe` ""
     pretty i3 `shouldNotBe` ""
     pretty i4 `shouldNotBe` ""
     pretty i5 `shouldNotBe` ""
-    pretty i6 `shouldNotBe` ""
 
   it "should parse correct tapes" $ do
     let

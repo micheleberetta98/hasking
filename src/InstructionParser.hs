@@ -7,9 +7,8 @@ import           Control.Applicative (Alternative ((<|>)))
 import           Data.Char           (isAlphaNum)
 import           Data.Functor        (($>))
 import           Error               (ErrorType (InvalidInstruction, UnrecognizedChars))
-import           Parser              (Parser (..), astring, char, identifier,
-                                      oneOrMore, satisfy, spaced, spaced1,
-                                      zeroOrMore)
+import           Parser              (Parser (..), alpha, alphaNum, anyOf, char,
+                                      identifier, spaced, zeroOrMore)
 import           Pretty              (Pretty (..), prettyList, wrap)
 import           Tape                (Direction (..), Symbol (..))
 import           TuringMachine       (State (..))
@@ -20,11 +19,11 @@ import           TuringMachine       (State (..))
 
 -- | An instruction for the turing machine can be
 -- - A `Step` which has
---  - A state name (state id)
---  - Something to read (value)
---  - A new state name (state id)
---  - Something to write (value)
---  - A movement (Direction)
+--   - A state name (state id)
+--   - Something to read (value)
+--   - A new state name (state id)
+--   - Something to write (value)
+--   - A movement (`Direction`)
 -- - A `Control`, which has a command and a list of states
 -- - A `TapeValue`, the input tape
 data Instruction =
@@ -61,19 +60,17 @@ step :: Parser Instruction
 step = delimiter '(' *> s <* delimiter ')'
   where
     s = Step
-      <$> spaced1 state
-      <*> spaced1 symbol
-      <*> spaced1 state
-      <*> spaced1 symbol
+      <$> spaced state
+      <*> spaced symbol
+      <*> spaced state
+      <*> spaced symbol
       <*> spaced direction
 
 -- | Parses a control sequence in the form `[NAME s1 s2 s3 ...]`
 control :: Parser Instruction
 control = delimiter '[' *> c <* delimiter ']'
   where
-    c = Control <$> spaced1 astring <*> values
-
-    values = (:) <$> spaced state <*> zeroOrMore (spaced state)
+    c = Control <$> spaced alpha <*> zeroOrMore (spaced state)
 
 -- | Parses the initial value of the tape, namely `{Symbol Symbol ...}`
 tape :: Parser Instruction
@@ -89,7 +86,7 @@ symbol :: Parser (Symbol String)
 symbol = blank <|> (Symbol <$> symbolValue)
   where
     blank = char '.' $> Blank
-    symbolValue = oneOrMore $ satisfy isAlphaNum <|> satisfy (`elem` "*#")
+    symbolValue = alphaNum <|> anyOf "*#"
 
 -- | Parses a direction
 direction :: Parser Direction
