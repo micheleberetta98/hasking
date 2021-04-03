@@ -39,10 +39,10 @@ If you provide no initial tape using the `-t` option, its value will be searched
 
 The file you pass to the machine contains the machine definition. There are some rules:
 * Each line is one instruction
-* The input and machine alphabet are comprised of ***symbols***, which can be either a sequence of alphanumeric characters or the special *blank symbol* `.` (dot)
+* The input and machine alphabet are comprised of ***symbols***, which can be letters, numbers or one between `*` and `#`, and the special *blank symbol* is identified by `.` (dot)
 * The ***state*** of the machine is a series of alphanumeric characters that starts with a letter
 * The ***direction*** is one of `L`, `R` or `S` (left, right or stay)
-* The initial tape is comprised of non-blank symbols
+* The initial tape is comprised of symbols (even blank ones)
 * ***Comments*** are everything that follows a `;`
 
 Given these, there are only 3 types of lines: state transitions, control instructions and the initial tape value.
@@ -80,4 +80,3 @@ This is simply a list of symbols wrapped in curly brackets
 
 The initial tape has to
 * Contain *at least* one symbol
-* Do not contain any *blank* symbols

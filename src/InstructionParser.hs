@@ -4,10 +4,12 @@ module InstructionParser
   ) where
 
 import           Control.Applicative (Alternative ((<|>)))
+import           Data.Char           (isAlphaNum)
 import           Data.Functor        (($>))
 import           Error               (ErrorType (InvalidInstruction, UnrecognizedChars))
-import           Parser              (Parser (..), astring, atom, char,
-                                      identifier, spaced, spaced1, zeroOrMore)
+import           Parser              (Parser (..), astring, char, identifier,
+                                      oneOrMore, satisfy, spaced, spaced1,
+                                      zeroOrMore)
 import           Pretty              (Pretty (..), prettyList, wrap)
 import           Tape                (Direction (..), Symbol (..))
 import           TuringMachine       (State (..))
@@ -37,7 +39,7 @@ data Instruction =
     { command :: String
     , value   :: [State String]
     }
-  | TapeValue [String]
+  | TapeValue [Symbol String]
   deriving (Show, Eq)
 
 ------------------------------------------------
@@ -76,17 +78,20 @@ control = delimiter '[' *> c <* delimiter ']'
 -- | Parses the initial value of the tape, namely `{Symbol Symbol ...}`
 tape :: Parser Instruction
 tape = delimiter '{' *> t <* delimiter '}'
-  where t = TapeValue <$> zeroOrMore (spaced atom)
+  where t = TapeValue <$> zeroOrMore (spaced symbol)
 
 -- | Parses a state value
 state :: Parser (State String)
 state = State <$> identifier
 
--- | Parses a value
+-- | Parses a symbol
 symbol :: Parser (Symbol String)
-symbol = (Symbol <$> atom) <|> blank
-  where blank = char '.' $> Blank
+symbol = blank <|> (Symbol <$> symbolValue)
+  where
+    blank = char '.' $> Blank
+    symbolValue = oneOrMore $ satisfy isAlphaNum <|> satisfy (`elem` "*#")
 
+-- | Parses a direction
 direction :: Parser Direction
 direction = toDirection <$> (char 'L' <|> char 'R' <|> char 'S')
   where

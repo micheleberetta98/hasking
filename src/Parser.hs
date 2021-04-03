@@ -6,11 +6,11 @@ module Parser
   , spaces1
   , astring
   , identifier
-  , atom
   , spaced
   , spaced1
   , zeroOrMore
   , oneOrMore
+  , satisfy
   ) where
 
 import           Control.Applicative (Alternative (empty, (<|>)),
@@ -72,10 +72,6 @@ astring = oneOrMore (satisfy isAlpha)
 identifier :: Parser String
 identifier = (:) <$> satisfy isAlpha <*> zeroOrMore (satisfy isAlphaNum)
 
--- | Parses an atom, i.e. a string made of alphanumeric characters
-atom :: Parser String
-atom = oneOrMore (satisfy isAlphaNum)
-
 -- | Utility to transform a parser `p` into a parser of the same type, but with
 -- spaces (or no spaces) around
 spaced :: Parser a -> Parser a
@@ -86,9 +82,9 @@ spaced p = spaces *> p <* spaces
 spaced1 :: Parser a -> Parser a
 spaced1 p = spaces *> p <* spaces1
 
--- ------------------------------------------------
--- -- Repetitions
--- ------------------------------------------------
+------------------------------------------------
+-- Repetitions
+------------------------------------------------
 
 -- | Parses zero or more occurences given a parser `p`
 zeroOrMore ::  Parser a -> Parser [a]

@@ -68,8 +68,10 @@ instructionTests = describe "InstructionParser" $ do
       Right t1 = parseInstruction "{0 0 2}"
       Right t2 = parseInstruction "{a b c}"
       Right t3 = parseInstruction "{  s   }"
+      Right t4 = parseInstruction "{0 0 . 0 0}"
 
     pretty t1 `shouldBe` "{0 0 2}"
     pretty t2 `shouldBe` "{a b c}"
     pretty t3 `shouldBe` "{s}"
+    pretty t4 `shouldBe` "{0 0 . 0 0}"
 
