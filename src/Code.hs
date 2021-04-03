@@ -47,12 +47,12 @@ data MachineCode = MachineCode
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Left ErrorList` if something goes wrong
 parseCode :: Code -> WithErrors MachineCode
-parseCode = buildCode . map (fmap parseInstruction) . sanitizeCode
+parseCode = build . map (fmap parseInstruction) . sanitize
 
 -- | Removes the comments and the empty lines from the code, giving back only
 -- the interesting bits
-sanitizeCode :: Code -> [WithLine String]
-sanitizeCode = filter (not . isEmpty) . map stripComment . addLineNumbers
+sanitize :: Code -> [WithLine String]
+sanitize = filter (not . isEmpty) . map stripComment . addLineNumbers
   where
     addLineNumbers = zip [1..] . lines
     stripComment = fmap (dropWhile isSpace . takeWhile (/= ';'))
@@ -60,8 +60,8 @@ sanitizeCode = filter (not . isEmpty) . map stripComment . addLineNumbers
 
 -- | Builds the `MachineCode` structure if all the instructions are correct, or it returns
 -- a `Left ErrorList` with all the errors
-buildCode :: [WithLine (WithError Instruction)] -> WithErrors MachineCode
-buildCode ls =
+build :: [WithLine (WithError Instruction)] -> WithErrors MachineCode
+build ls =
   let (errs, instructions) = splitErrors ls
   in if null errs
     then buildMachine instructions
@@ -79,12 +79,18 @@ splitErrors = bimap toErrors toInstructions . partition isLeft . map (addLine . 
 
 -- | Builds the `MachineCode` given a list of instructions and their lines
 buildMachine :: [Instruction] -> WithErrors MachineCode
-buildMachine = validateInputTape . foldl' updateCode empty
+buildMachine = validateMachine . foldl' updateCode empty
   where
     empty = MachineCode M.empty (State "") [] T.empty
-    validateInputTape m
-      | hasInputTape m = Right m
-      | otherwise = Left . singleton $ SimpleError MissingInputTape
+    validateMachine m
+      | noInputTape m = Left . singleton $ SimpleError MissingInputTape
+      | noInitialState m = Left . singleton $ SimpleError NoInitialState
+      | noFinalStates m = Left . singleton $ SimpleError NoFinalStates
+      | otherwise = Right m
+
+    noInputTape = null . T.toList . initialTape
+    noInitialState (MachineCode _ s _ _) = s == State ""
+    noFinalStates (MachineCode _ _ fs _) = null fs
 
 ------------------------------------------------
 -- Validations
@@ -100,10 +106,6 @@ validate i = i >>= validate'
     validate' (Control "FINALS" [])   = Left NoFinalStates
     validate' (TapeValue [])          = Left EmptyInputTape
     validate' i                       = Right i
-
--- | Checks wether the initial tape is present or not
-hasInputTape :: MachineCode -> Bool
-hasInputTape = not . null . T.toList . initialTape
 
 ------------------------------------------------
 -- Utilities
