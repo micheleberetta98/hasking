@@ -59,11 +59,11 @@ move R = right
 
 -- | Writes a symbol to the `Tape`
 write :: Symbol a -> Tape a -> Tape a
-write symbol (Cell _ l r) = head
+write symbol (Cell _ l r) = h
   where
-    head = Cell symbol prev next
-    prev = l{ right = head }
-    next = r{ left = head }
+    h = Cell symbol prev next
+    prev = l{ right = h }
+    next = r{ left = h }
 
 -----------------------------------------------
 -- Instances

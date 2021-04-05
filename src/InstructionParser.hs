@@ -4,7 +4,6 @@ module InstructionParser
   ) where
 
 import           Control.Applicative (Alternative ((<|>)))
-import           Data.Char           (isAlphaNum)
 import           Data.Functor        (($>))
 import           Error               (ErrorType (InvalidInstruction, UnrecognizedChars))
 import           Parser              (Parser (..), alpha, alphaNum, anyOf, char,
@@ -52,7 +51,7 @@ parseInstruction :: String -> Either ErrorType Instruction
 parseInstruction s =
   case runParser (step <|> control <|> tape) s of
     Just (i, "") -> Right i
-    Just (i, _)  -> Left UnrecognizedChars
+    Just (_, _)  -> Left UnrecognizedChars
     _            -> Left InvalidInstruction
 
 -- | Parses a step in the such as `(s1 v1 s2 v2 dir)`
@@ -95,6 +94,7 @@ direction = toDirection <$> (char 'L' <|> char 'R' <|> char 'S')
     toDirection 'L' = L
     toDirection 'R' = R
     toDirection 'S' = S
+    toDirection _   = S -- Fallback, should never happen
 
 -- | Parses a delimiter - a start or a stop sequence
 delimiter :: Char -> Parser Char
@@ -111,6 +111,6 @@ instance Pretty Instruction where
       v1' = pretty v1
       s2' = pretty s2
       v2' = pretty v2
-  pretty (Control name value) = wrap "[" (prettyList (name : map pretty value)) "]"
-  pretty (TapeValue tape)     = wrap "{" (prettyList tape) "}"
+  pretty (Control n v) = wrap "[" (prettyList (n : map pretty v)) "]"
+  pretty (TapeValue t)     = wrap "{" (prettyList t) "}"
 

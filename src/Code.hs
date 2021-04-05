@@ -3,15 +3,15 @@ module Code
   , fromCode
   ) where
 
-import           Data.Bifunctor    (Bifunctor (bimap, first))
+import           Data.Bifunctor    (Bifunctor (first))
 import           Data.Char         (isSpace)
-import           Data.Either       (fromLeft, fromRight, isLeft)
+import           Data.Either       (fromLeft, isLeft)
 import           Data.List         (foldl', partition)
 import qualified Data.Map          as M
 import           Error             (Error (..), ErrorList, ErrorType (..),
-                                    fromList, singleton)
+                                    singleton)
 import           InstructionParser (Instruction (..), parseInstruction)
-import           Tape              (Direction, Symbol, Tape)
+import           Tape              (Tape)
 import qualified Tape              as T
 import           TuringMachine     (From, State (State), To, Transitions)
 
@@ -47,7 +47,7 @@ empty = MachineCode M.empty (State "") [] T.empty
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Left ErrorList` if something goes wrong
 fromCode :: Code -> WithErrors MachineCode
-fromCode = build . parse . sanitize
+fromCode = build . map (fmap validate) . parse . sanitize
   where parse = map (fmap parseInstruction)
 
 -- | Removes the comments and the empty lines from the code, giving back only
@@ -64,11 +64,11 @@ sanitize = filter notEmpty . map stripComment . addLineNumbers
 build :: [WithLine (WithError Instruction)] -> WithErrors MachineCode
 build ls =
   if null errs
-    then fromRight (Right empty) (buildMachine <$> mapM snd ls)
-    else Left (fromList $ map addLine errs)
+    then sequence instructions >>= buildMachine
+    else Left . foldl' (<>) mempty $ map (fromLeft mempty) errs
   where
-    errs = filter (isLeft . snd) $ map (fmap validate) ls
-    addLine (l, x) = LineError l (fromLeft InvalidInstruction x)
+    (errs, instructions) = partition isLeft $ map formatErrors ls
+    formatErrors (l, x) = first (singleton . LineError l) x
 
 -- | Builds the `MachineCode` given a list of instructions and their lines
 buildMachine :: [Instruction] -> WithErrors MachineCode
@@ -93,11 +93,11 @@ validate :: Either ErrorType Instruction -> Either ErrorType Instruction
 validate i = i >>= validate'
   where
     validate' (Control "BEGIN" [])    = Left NoInitialState
-    validate' i@(Control "BEGIN" [s]) = Right i
-    validate' (Control "BEGIN" ss)    = Left MultiInitialState
-    validate' (Control "FINALS" [])   = Left NoFinalStates
+    validate' x@(Control "BEGIN" [_]) = Right x
+    validate' (Control "BEGIN" _)     = Left MultiInitialState
+    validate' (Control "FINAL" [])    = Left NoFinalStates
     validate' (TapeValue [])          = Left EmptyInputTape
-    validate' i                       = Right i
+    validate' x                       = Right x
 
 ------------------------------------------------
 -- Utilities
@@ -105,18 +105,12 @@ validate i = i >>= validate'
 
 -- | Updates the machine code given a single instruction
 updateCode :: MachineCode -> Instruction -> MachineCode
-updateCode c (Control "BEGIN" [s]) = c{ initialState = s }
-updateCode c (Control "FINAL" s)   = c{ finalStates = s }
-updateCode c (TapeValue tape)      = c{ initialTape = T.fromList tape }
-updateCode c s                     = addTransition (split s) c
+updateCode c (Control "BEGIN" s)  = c{ initialState = head s }
+updateCode c (Control "FINAL" s)  = c{ finalStates = s }
+updateCode c (TapeValue tape)     = c{ initialTape = T.fromList tape }
+updateCode c (Step s1 v1 s2 v2 d) = addTransition ((s1, v1), (s2, v2, d)) c
+updateCode _ (Control x _)        = error $ "This shouldn't have happened, found invalid control with name `" ++ x ++ "`"
 
 -- | Inserts a new transitions into the existing ones
 addTransition :: (From String String, To String String) -> MachineCode -> MachineCode
 addTransition (from, to) c = c{ transitions = M.insert from to (transitions c) }
-
--- | It converts a `Step` instruction into a tuple made of `From` and `To`
-split :: Instruction -> (From String String, To String String)
-split (Step s1 v1 s2 v2 d) = (from, to)
-  where
-    from = (s1, v1)
-    to = (s2, v2, d)

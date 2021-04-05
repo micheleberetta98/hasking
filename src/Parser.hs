@@ -15,7 +15,7 @@ import           Control.Applicative (Alternative (empty, (<|>)),
                                       Applicative (liftA2))
 
 import           Data.Bifunctor      (Bifunctor (first))
-import           Data.Char           (isAlpha, isAlphaNum, isDigit, isSpace)
+import           Data.Char           (isAlpha, isAlphaNum, isSpace)
 
 -----------------------------------------------
 -- Data declarations

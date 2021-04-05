@@ -7,7 +7,7 @@ module TuringMachine
   ) where
 
 import           Data.Function (on)
-import           Data.Map      (Map, fromList, (!?))
+import           Data.Map      (Map, (!?))
 import           Pretty        (Pretty (..))
 import           Tape          (Direction, Symbol, Tape, move, value, write)
 
