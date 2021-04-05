@@ -3,9 +3,9 @@ module Code
   , fromCode
   ) where
 
-import           Data.Bifunctor    (Bifunctor (bimap))
+import           Data.Bifunctor    (Bifunctor (bimap, first))
 import           Data.Char         (isSpace)
-import           Data.Either       (isLeft)
+import           Data.Either       (fromLeft, fromRight, isLeft)
 import           Data.List         (foldl', partition)
 import qualified Data.Map          as M
 import           Error             (Error (..), ErrorList, ErrorType (..),
@@ -40,48 +40,40 @@ data MachineCode = MachineCode
 -- Functions for code parsing
 ------------------------------------------------
 
--- -- | An empty `MachineCode` structure
--- empty :: MachineCode
--- empty = MachineCode M.empty (State "") [] T.empty
+-- | An empty `MachineCode` structure
+empty :: MachineCode
+empty = MachineCode M.empty (State "") [] T.empty
 
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Left ErrorList` if something goes wrong
 fromCode :: Code -> WithErrors MachineCode
-fromCode = build . map (fmap parseInstruction) . sanitize
+fromCode = build . parse . sanitize
+  where parse = map (fmap parseInstruction)
 
 -- | Removes the comments and the empty lines from the code, giving back only
 -- the interesting bits
 sanitize :: Code -> [WithLine String]
-sanitize = filter (not . isEmpty) . map stripComment . addLineNumbers
+sanitize = filter notEmpty . map stripComment . addLineNumbers
   where
     addLineNumbers = zip [1..] . lines
     stripComment = fmap (dropWhile isSpace . takeWhile (/= ';'))
-    isEmpty = null . snd
+    notEmpty = not . null . snd
 
 -- | Builds the `MachineCode` structure if all the instructions are correct, or it returns
 -- a `Left ErrorList` with all the errors
 build :: [WithLine (WithError Instruction)] -> WithErrors MachineCode
 build ls =
-  let (errs, instructions) = splitErrors ls
-  in if null errs
-    then buildMachine instructions
-    else Left $ fromList errs
-
--- | Used to separate all the errors and instructions from
-splitErrors :: [WithLine (WithError Instruction)] -> ([Error], [Instruction])
-splitErrors = bimap toErrors toInstructions . partition isLeft . map (addLine . fmap validate)
+  if null errs
+    then fromRight (Right empty) (buildMachine <$> mapM snd ls)
+    else Left (fromList $ map addLine errs)
   where
-    addLine (_, Right x)  = Right x
-    addLine (l, Left err) = Left $ LineError l err
-
-    toErrors = map (\(Left x) -> x)
-    toInstructions = map (\(Right x) -> x)
+    errs = filter (isLeft . snd) $ map (fmap validate) ls
+    addLine (l, x) = LineError l (fromLeft InvalidInstruction x)
 
 -- | Builds the `MachineCode` given a list of instructions and their lines
 buildMachine :: [Instruction] -> WithErrors MachineCode
 buildMachine = validateMachine . foldl' updateCode empty
   where
-    empty = MachineCode M.empty (State "") [] T.empty
     validateMachine m
       | noInputTape m = Left . singleton $ SimpleError MissingInputTape
       | noInitialState m = Left . singleton $ SimpleError NoInitialState
