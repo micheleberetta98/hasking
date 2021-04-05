@@ -1,5 +1,6 @@
 module TuringMachineSpec where
 
+import qualified Data.Map      as M
 import           Tape
 import           Test.Hspec
 import           TuringMachine
@@ -19,7 +20,7 @@ turingMachineTests = describe "Turing Machine" $ do
     toList <$> result `shouldBe` Left (State "A", Symbol 1)
 
 t :: Transitions String Int
-t = buildTransitions
+t = M.fromList
   [ ((State "A", Symbol 0), (State "A", Symbol 1, R))
   , ((State "A", Blank   ), (State "B", Blank,    L))
   , ((State "B", Blank   ), (State "C", Blank,    R))

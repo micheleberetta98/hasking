@@ -4,7 +4,6 @@ module TuringMachine
   , From
   , To
   , Transitions
-  , buildTransitions
   ) where
 
 import           Data.Function (on)
@@ -61,10 +60,6 @@ runTransition transitions from =
   case transitions !? from of
     Just to -> Right to
     Nothing -> Left from
-
--- | Constructs the transitions from a list of `(From s a, To s a)`
-buildTransitions :: (Ord s, Ord a) => [(From s a, To s a)] -> Transitions s a
-buildTransitions = fromList
 
 ------------------------------------------------
 -- Instances
