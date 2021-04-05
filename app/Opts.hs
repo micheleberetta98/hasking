@@ -7,7 +7,7 @@ import           System.Console.GetOpt (ArgDescr (NoArg, ReqArg),
 import           Data.List             (foldl')
 import           InstructionParser     (Instruction (TapeValue),
                                         parseInstruction)
-import           System.Environment    (getArgs, getProgName)
+import           System.Environment    (getArgs)
 import           System.Exit           (exitFailure, exitSuccess)
 import           System.IO             (hPutStrLn, stderr)
 import           Tape                  (Tape, fromList)

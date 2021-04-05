@@ -1,7 +1,7 @@
 name:                hasking
 version:             1.2.1
 github:              "micheleberetta98/hasking"
-license:             BSD3
+license:             MIT 
 author:              "Michele Beretta"
 maintainer:          "beretta.m98@gmail.com"
 copyright:           "2021 Michele Beretta"
@@ -34,6 +34,9 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wall
+    - -Werror
+    - -O2
     dependencies:
     - hasking
 

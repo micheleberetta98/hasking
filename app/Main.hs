@@ -2,10 +2,10 @@ module Main (main) where
 
 import           Code          (MachineCode (MachineCode), fromCode)
 import           Opts          (getOpts)
-import           Pretty        (Pretty (..), prettyList, wrap)
+import           Pretty        (Pretty (..))
 import           System.Exit   (exitFailure)
-import           System.IO     (hPrint, hPutStrLn, stderr)
-import           Tape          (Symbol, Tape, toList)
+import           System.IO     (hPutStrLn, stderr)
+import           Tape          (Symbol, Tape)
 import           TuringMachine (State, machine)
 
 main :: IO ()
