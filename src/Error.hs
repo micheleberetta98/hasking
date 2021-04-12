@@ -9,8 +9,8 @@ module Error
   , message
   ) where
 
-import           Data.List (intercalate, sortOn)
-import           Pretty    (Pretty (..))
+import           Data.List (sortOn)
+import           Pretty    (Pretty (..), prettyList')
 
 ------------------------------------------------
 -- Data types
@@ -89,4 +89,4 @@ instance Pretty Error where
 
 instance Pretty ErrorList where
   pretty (ErrorList []) = ""
-  pretty (ErrorList es) = intercalate "\n" . map pretty $ sortOn line es
+  pretty (ErrorList es) = prettyList' "\n" $ sortOn line es
