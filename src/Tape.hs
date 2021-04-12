@@ -62,8 +62,24 @@ write :: Symbol a -> Tape a -> Tape a
 write symbol (Cell _ l r) = h
   where
     h = Cell symbol prev next
-    prev = l{ right = h }
-    next = r{ left = h }
+    prev = updateRight h l
+    next = updateLeft h r
+
+-- | Updates the left reference (recursively) in a tape
+updateLeft :: Tape a -> Tape a -> Tape a
+updateLeft to c@(Cell Blank _ _) = c{ left = to }
+updateLeft to (Cell s _ r) = h
+  where
+    h = Cell s to next
+    next = updateLeft h r
+
+-- | Updates the right reference (recursively) in a tape
+updateRight :: Tape a -> Tape a -> Tape a
+updateRight to c@(Cell Blank _ _) = c{ right = to }
+updateRight to (Cell s l _) = h
+  where
+    h = Cell s prev to
+    prev = updateRight h l
 
 -----------------------------------------------
 -- Instances
