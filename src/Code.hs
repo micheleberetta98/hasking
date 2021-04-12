@@ -47,15 +47,17 @@ empty = MachineCode M.empty (State "") [] T.empty
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Left ErrorList` if something goes wrong
 fromCode :: Code -> WithErrors MachineCode
-fromCode = build . map (fmap validate) . parse . sanitize
-  where parse = map (fmap parseInstruction)
+fromCode = build . validateInstructions . parseInstructions . sanitize
+  where
+    parseInstructions = map (fmap parseInstruction)
+    validateInstructions = map (fmap (>>= validate))
 
 -- | Removes the comments and the empty lines from the code, giving back only
 -- the interesting bits
 sanitize :: Code -> [WithLine String]
-sanitize = filter notEmpty . map stripComment . addLineNumbers
+sanitize = filter notEmpty . map stripComment . addNumbers . lines
   where
-    addLineNumbers = zip [1..] . lines
+    addNumbers = zip [1..]
     stripComment = fmap (dropWhile isSpace . takeWhile (/= ';'))
     notEmpty = not . null . snd
 
@@ -89,15 +91,13 @@ buildMachine = validateMachine . foldl' updateCode empty
 ------------------------------------------------
 
 -- | It validates a single instruction, that could have been parsed correctly or not
-validate :: Either ErrorType Instruction -> Either ErrorType Instruction
-validate i = i >>= validate'
-  where
-    validate' (Control "BEGIN" [])    = Left NoInitialState
-    validate' x@(Control "BEGIN" [_]) = Right x
-    validate' (Control "BEGIN" _)     = Left MultiInitialState
-    validate' (Control "FINAL" [])    = Left NoFinalStates
-    validate' (TapeValue [])          = Left EmptyInputTape
-    validate' x                       = Right x
+validate :: Instruction -> Either ErrorType Instruction
+validate (Control "BEGIN" [])    = Left NoInitialState
+validate x@(Control "BEGIN" [_]) = Right x
+validate (Control "BEGIN" _)     = Left MultiInitialState
+validate (Control "FINAL" [])    = Left NoFinalStates
+validate (TapeValue [])          = Left EmptyInputTape
+validate x                       = Right x
 
 ------------------------------------------------
 -- Utilities
