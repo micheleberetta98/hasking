@@ -3,9 +3,9 @@ module Code
   , fromCode
   ) where
 
-import           Data.Bifunctor    (Bifunctor (first))
+import           Data.Bifunctor    (bimap)
 import           Data.Char         (isSpace)
-import           Data.Either       (fromLeft, isLeft)
+import           Data.Either       (isLeft)
 import           Data.List         (foldl', partition)
 import qualified Data.Map          as M
 import           Error             (Error (..), ErrorList, ErrorType (..),
@@ -66,11 +66,12 @@ sanitize = filter notEmpty . map stripComment . addNumbers . lines
 build :: [WithLine (WithError Instruction)] -> WithErrors MachineCode
 build ls =
   if null errs
-    then sequence instructions >>= buildMachine
-    else Left . foldl' (<>) mempty $ map (fromLeft mempty) errs
+    then buildMachine instructions
+    else Left $ foldl' (<>) mempty errs
   where
-    (errs, instructions) = partition isLeft $ map formatErrors ls
-    formatErrors (l, x) = first (singleton . LineError l) x
+    (errs, instructions) = bimap formatErrors formatInstructions $ partition (isLeft . snd) ls
+    formatErrors = map (\(l, Left x) -> singleton $ LineError l x)
+    formatInstructions =  map (\(_, Right x) -> x)
 
 -- | Builds the `MachineCode` given a list of instructions and their lines
 buildMachine :: [Instruction] -> WithErrors MachineCode
