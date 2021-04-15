@@ -1,12 +1,7 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Error
   ( Error(..)
   , ErrorType(..)
-  , ErrorList
-  , fromList
-  , singleton
-  , len
-  , line
-  , message
   ) where
 
 import           Data.List (sortOn)
@@ -30,47 +25,14 @@ data ErrorType =
   deriving (Show, Eq)
 
 -- | An error can be a message with a line, or just a generic message
-data Error = SimpleError ErrorType | LineError Int ErrorType
+data Error =
+  SimpleError ErrorType
+  | LineError Int ErrorType
   deriving (Show, Eq)
-
--- | A list of errors
-newtype ErrorList = ErrorList [Error] deriving (Show, Eq)
-
-------------------------------------------------
--- Utils
-------------------------------------------------
-
--- | Builds an `ErrorList` from a list of `Errors`
-fromList :: [Error] -> ErrorList
-fromList = ErrorList
-
--- | Creates a list with a single error
-singleton :: Error -> ErrorList
-singleton le = ErrorList [le]
-
--- | Gets the number of errors in the `ErrorList`
-len :: ErrorList -> Int
-len (ErrorList es) = length es
-
--- | Retrieves the line of an `Error`
-line :: Error -> Maybe Int
-line (SimpleError _) = Nothing
-line (LineError l _) = Just l
-
--- | Retrieves the message of an `Error`
-message :: Error -> ErrorType
-message (SimpleError msg) = msg
-message (LineError _ msg) = msg
 
 ------------------------------------------------
 -- Instances
 ------------------------------------------------
-
-instance Semigroup ErrorList where
-  (ErrorList e1) <> (ErrorList e2) = ErrorList (e1 ++ e2)
-
-instance Monoid ErrorList where
-  mempty = ErrorList []
 
 instance Pretty ErrorType where
   pretty NoInstructions         = "No instructions provided"
@@ -87,6 +49,9 @@ instance Pretty Error where
   pretty (SimpleError s) = "(!) " ++ pretty s
   pretty (LineError l s) = "(!) at line " ++ pretty l ++ ": " ++ pretty s
 
-instance Pretty ErrorList where
-  pretty (ErrorList []) = ""
-  pretty (ErrorList es) = prettyList' "\n" $ sortOn line es
+instance Pretty [Error] where
+  pretty [] = ""
+  pretty es = prettyList' "\n" $ sortOn line es
+    where
+      line (SimpleError _) = Nothing
+      line (LineError l _) = Just l

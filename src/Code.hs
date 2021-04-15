@@ -3,13 +3,11 @@ module Code
   , fromCode
   ) where
 
-import           Data.Bifunctor    (bimap)
 import           Data.Char         (isSpace)
-import           Data.Either       (isLeft)
-import           Data.List         (foldl', partition)
+import           Data.Either       (fromLeft, isLeft)
+import           Data.List         (foldl')
 import qualified Data.Map          as M
-import           Error             (Error (..), ErrorList, ErrorType (..),
-                                    singleton)
+import           Error             (Error (..), ErrorType (..))
 import           InstructionParser (Instruction (..), parseInstruction)
 import           Tape              (Tape)
 import qualified Tape              as T
@@ -25,8 +23,7 @@ type Code = String
 -- | A type with its line number
 type WithLine a = (Int, a)
 
-type WithError = Either ErrorType
-type WithErrors = Either ErrorList
+type WithErrors = Either [Error]
 
 -- | The whole machine specification, derived from a piece of code
 data MachineCode = MachineCode
@@ -47,10 +44,12 @@ empty = MachineCode M.empty (State "") [] T.empty
 -- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
 -- It returns `Left ErrorList` if something goes wrong
 fromCode :: Code -> WithErrors MachineCode
-fromCode = build . validateInstructions . parseInstructions . sanitize
+fromCode = build . map formatError . validateInstructions . parseInstructions . sanitize
   where
     parseInstructions = map (fmap parseInstruction)
     validateInstructions = map (fmap (>>= validate))
+    formatError (i, Left e)  = Left [LineError i e]
+    formatError (_, Right x) = Right x
 
 -- | Removes the comments and the empty lines from the code, giving back only
 -- the interesting bits
@@ -63,24 +62,25 @@ sanitize = filter notEmpty . map stripComment . addNumbers . lines
 
 -- | Builds the `MachineCode` structure if all the instructions are correct, or it returns
 -- a `Left ErrorList` with all the errors
-build :: [WithLine (WithError Instruction)] -> WithErrors MachineCode
+build :: [WithErrors Instruction] -> WithErrors MachineCode
 build ls =
   if null errs
-    then buildMachine instructions
+    then sequence ls >>= buildMachine
     else Left $ foldl' (<>) mempty errs
   where
-    (errs, instructions) = bimap formatErrors formatInstructions $ partition (isLeft . snd) ls
-    formatErrors = map (\(l, Left x) -> singleton $ LineError l x)
-    formatInstructions =  map (\(_, Right x) -> x)
+    errs = map (fromLeft mempty) $ filter isLeft ls
 
 -- | Builds the `MachineCode` given a list of instructions and their lines
 buildMachine :: [Instruction] -> WithErrors MachineCode
 buildMachine = validateMachine . foldl' updateCode empty
   where
-    validateMachine m
-      | noInputTape m = Left . singleton $ SimpleError MissingInputTape
-      | noInitialState m = Left . singleton $ SimpleError NoInitialState
-      | noFinalStates m = Left . singleton $ SimpleError NoFinalStates
+    validateMachine m =
+      when noInputTape MissingInputTape m
+        >>= when noInitialState NoInitialState
+        >>= when noFinalStates NoFinalStates
+
+    when fcheck err m
+      | fcheck m       = Left [SimpleError err]
       | otherwise = Right m
 
     noInputTape = null . T.toList . initialTape
