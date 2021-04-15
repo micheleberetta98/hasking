@@ -3,15 +3,15 @@ module Code
   , fromCode
   ) where
 
-import           Data.Char         (isSpace)
-import           Data.Either       (fromLeft, isLeft)
-import           Data.List         (foldl')
-import qualified Data.Map          as M
-import           Error             (Error (..), ErrorType (..))
-import           InstructionParser (Instruction (..), parseInstruction)
-import           Tape              (Tape)
-import qualified Tape              as T
-import           TuringMachine     (From, State (State), To, Transitions)
+import           Data.Char     (isSpace)
+import           Data.Either   (fromLeft, isLeft)
+import           Data.List     (foldl')
+import qualified Data.Map      as M
+import           Error         (Error (..), ErrorType (..))
+import           Instruction   (Instruction (..), parseInstruction, validate)
+import           Tape          (Tape)
+import qualified Tape          as T
+import           TuringMachine (From, State (State), To, Transitions)
 
 ------------------------------------------------
 -- Data types
@@ -73,32 +73,21 @@ build ls =
 -- | Builds the `MachineCode` given a list of instructions and their lines
 buildMachine :: [Instruction] -> WithErrors MachineCode
 buildMachine = validateMachine . foldl' updateCode empty
-  where
-    validateMachine m =
-      when noInputTape MissingInputTape m
-        >>= when noInitialState NoInitialState
-        >>= when noFinalStates NoFinalStates
 
-    when fcheck err m
-      | fcheck m       = Left [SimpleError err]
-      | otherwise = Right m
+-- | Validates the entire `MachineCode`
+validateMachine :: MachineCode -> WithErrors MachineCode
+validateMachine m =
+  when noInputTape MissingInputTape m
+    >>= when noInitialState NoInitialState
+    >>= when noFinalStates NoFinalStates
+  where
+    when fcheck err m'
+      | fcheck m'  = Left [SimpleError err]
+      | otherwise  = Right m'
 
     noInputTape = null . T.toList . initialTape
     noInitialState (MachineCode _ s _ _) = s == State ""
     noFinalStates (MachineCode _ _ fs _) = null fs
-
-------------------------------------------------
--- Validations
-------------------------------------------------
-
--- | It validates a single instruction, that could have been parsed correctly or not
-validate :: Instruction -> Either ErrorType Instruction
-validate (Control "BEGIN" [])    = Left NoInitialState
-validate x@(Control "BEGIN" [_]) = Right x
-validate (Control "BEGIN" _)     = Left MultiInitialState
-validate (Control "FINAL" [])    = Left NoFinalStates
-validate (TapeValue [])          = Left EmptyInputTape
-validate x                       = Right x
 
 ------------------------------------------------
 -- Utilities

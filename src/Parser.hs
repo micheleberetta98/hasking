@@ -2,10 +2,9 @@ module Parser
   ( Parser(runParser)
   , alpha
   , alphaNum
+  , anyOf
   , char
   , identifier
-  , anyOf
-  , satisfy
   , spaced
   , spaces
   , zeroOrMore

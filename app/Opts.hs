@@ -5,8 +5,7 @@ import           System.Console.GetOpt (ArgDescr (NoArg, ReqArg),
                                         getOpt, usageInfo)
 
 import           Data.List             (foldl')
-import           InstructionParser     (Instruction (TapeValue),
-                                        parseInstruction)
+import           Instruction           (Instruction (TapeValue), parseInstruction)
 import           System.Environment    (getArgs)
 import           System.Exit           (exitFailure, exitSuccess)
 import           System.IO             (hPutStrLn, stderr)

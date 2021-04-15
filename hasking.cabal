@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2b94872526284aae673bdbbad1ce73c0ee40b58f333cbc251e0886f419f6677f
+-- hash: e08f0da40f7131d192786c8821e1aa3975bda907732ef945101e8d7ac21fa581
 
 name:           hasking
 version:        1.2.3
@@ -28,7 +28,7 @@ library
   exposed-modules:
       Code
       Error
-      InstructionParser
+      Instruction
       Parser
       Pretty
       Tape
@@ -61,7 +61,7 @@ test-suite hasking-test
   main-is: Spec.hs
   other-modules:
       CodeSpec
-      InstructionParserSpec
+      InstructionSpec
       ParserSpec
       TapeSpec
       TuringMachineSpec

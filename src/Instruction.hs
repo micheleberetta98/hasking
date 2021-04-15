@@ -1,11 +1,12 @@
-module InstructionParser
+module Instruction
   ( Instruction(..)
   , parseInstruction
+  , validate
   ) where
 
 import           Control.Applicative (Alternative ((<|>)))
 import           Data.Functor        (($>))
-import           Error               (ErrorType (InvalidInstruction, UnrecognizedChars))
+import           Error               (ErrorType (..))
 import           Parser              (Parser (..), alpha, alphaNum, anyOf, char,
                                       identifier, spaced, zeroOrMore)
 import           Pretty              (Pretty (..), prettyList, wrap)
@@ -34,8 +35,8 @@ data Instruction =
     , dir          :: Direction
     }
   | Control
-    { command :: String
-    , value   :: [State String]
+    { command      :: String
+    , controlValue :: [State String]
     }
   | TapeValue [Symbol String]
   deriving (Show, Eq)
@@ -56,7 +57,7 @@ parseInstruction s =
 
 -- | Parses a step in the such as `(s1 v1 s2 v2 dir)`
 step :: Parser Instruction
-step = delimiter '(' *> s <* delimiter ')'
+step = delimited '(' s ')'
   where
     s = Step
       <$> spaced state
@@ -67,14 +68,31 @@ step = delimiter '(' *> s <* delimiter ')'
 
 -- | Parses a control sequence in the form `[NAME s1 s2 s3 ...]`
 control :: Parser Instruction
-control = delimiter '[' *> c <* delimiter ']'
+control = delimited '[' c ']'
   where
     c = Control <$> spaced alpha <*> zeroOrMore (spaced state)
 
 -- | Parses the initial value of the tape, namely `{Symbol Symbol ...}`
 tape :: Parser Instruction
-tape = delimiter '{' *> t <* delimiter '}'
+tape = delimited '{' t '}'
   where t = TapeValue <$> zeroOrMore (spaced symbol)
+
+------------------------------------------------
+-- Validations
+------------------------------------------------
+
+-- | It validates a single instruction, that could have been parsed correctly or not
+validate :: Instruction -> Either ErrorType Instruction
+validate (Control "BEGIN" [])    = Left NoInitialState
+validate x@(Control "BEGIN" [_]) = Right x
+validate (Control "BEGIN" _)     = Left MultiInitialState
+validate (Control "FINAL" [])    = Left NoFinalStates
+validate (TapeValue [])          = Left EmptyInputTape
+validate x                       = Right x
+
+------------------------------------------------
+-- Utils
+------------------------------------------------
 
 -- | Parses a state value
 state :: Parser (State String)
@@ -82,10 +100,10 @@ state = State <$> identifier
 
 -- | Parses a symbol
 symbol :: Parser (Symbol String)
-symbol = blank <|> (Symbol <$> symbolValue)
+symbol = blank <|> (Symbol <$> value)
   where
     blank = char '.' $> Blank
-    symbolValue = alphaNum <|> anyOf "*#"
+    value = alphaNum <|> anyOf "*#"
 
 -- | Parses a direction
 direction :: Parser Direction
@@ -96,9 +114,12 @@ direction = toDirection <$> (char 'L' <|> char 'R' <|> char 'S')
     toDirection 'S' = S
     toDirection _   = S -- Fallback, should never happen
 
--- | Parses a delimiter - a start or a stop sequence
-delimiter :: Char -> Parser Char
-delimiter = spaced . char
+-- | A utility to extend a single `Parser a`, which will
+-- | parse all instances of `a parser b`, ignoring the values of
+-- | `a` and `b` themselves
+delimited :: Char -> Parser a -> Char -> Parser a
+delimited a parser b = delimiter a *> parser <* delimiter b
+  where delimiter = spaced . char
 
 ------------------------------------------------
 -- Instances
@@ -113,4 +134,3 @@ instance Pretty Instruction where
       v2' = pretty v2
   pretty (Control n v) = wrap "[" (prettyList (n : map pretty v)) "]"
   pretty (TapeValue t)     = wrap "{" (prettyList t) "}"
-
