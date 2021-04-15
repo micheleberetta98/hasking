@@ -4,8 +4,9 @@ import           System.Console.GetOpt (ArgDescr (NoArg, ReqArg),
                                         ArgOrder (RequireOrder), OptDescr (..),
                                         getOpt, usageInfo)
 
-import           Data.List             (foldl')
-import           Instruction           (Instruction (TapeValue), parseInstruction)
+import           Data.List             (foldl', isPrefixOf)
+import           Instruction           (Instruction (TapeValue),
+                                        parseInstruction)
 import           System.Environment    (getArgs)
 import           System.Exit           (exitFailure, exitSuccess)
 import           System.IO             (hPutStrLn, stderr)
@@ -53,7 +54,7 @@ options =
         "The output file. If not specified, it will use the standard output."
     , Option "t" ["tape"]
         (ReqArg withTape "TAPE")
-        "The initial tape in the format {Symbol, Symbol, ...}.\nIt will overwrite any tape in the input file.\nIf not specified, it will be searched in the input file."
+        "The initial tape in the format {Symbol, Symbol, ...}, or even without the brackets.\nIt will overwrite any tape in the input file.\nIf not specified, it will be searched in the input file."
     , Option "v" ["version"]
         (NoArg printVersion)
         "Print the program version"
@@ -73,21 +74,24 @@ withOutput arg opt = return opt{ output = writeFile arg }
 -- | Sets the initial tape option
 withTape :: String -> Options -> IO Options
 withTape arg opt =
-  case parseInstruction arg of
+  case parseInstruction (format arg) of
     Right (TapeValue t) -> return opt{ tape = Just $ fromList t }
     _ -> do
       hPutStrLn stderr "Invalid tape provided"
       exitFailure
-
+    where
+      format t
+        | "{" `isPrefixOf` t = t
+        | otherwise          = "{" ++ t ++ "}"
 
 -- | Prints the version
 printVersion :: a -> IO b
 printVersion = const $ do
-  hPutStrLn stderr "1.2.3"
+  hPutStrLn stderr "1.3.0"
   exitSuccess
 
 -- | Prints the usage
 help :: a -> IO b
 help = const $ do
-  hPutStrLn stderr $ usageInfo "Hasking - A Turing Machine Interpreter written in Haskell" options
+  hPutStrLn stderr $ usageInfo "🖥  Hasking - A Turing Machine Interpreter written in Haskell" options
   exitSuccess

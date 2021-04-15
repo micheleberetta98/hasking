@@ -1,6 +1,6 @@
 ; A turing machine that transforms a tape of 0 into a tape of 1
 
-{0 0 0 0}     ; The input tape
+; {0 0 0 0}     ; The input tape
 
 [BEGIN s]     ; The initial state
 [FINAL q]     ; The final state (here just 1, could be more)
