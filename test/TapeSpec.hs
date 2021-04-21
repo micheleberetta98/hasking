@@ -31,11 +31,13 @@ tapeTests = describe "Tape" $ do
 
   it "should move past blanks correctly" $ do
     let
-      tape = fromList [Symbol 0, Blank, Symbol 1]
-      transform = move R . move R . move R
-      output = value (transform tape)
+      tape1 = fromList [Symbol 0, Blank, Symbol 1]
+      transform1 = move R . move R . move R
+      tape2 = fromList [Symbol 0, Symbol 1]
+      transform2 = move R . move L
 
-    output `shouldBe` Symbol 1
+    value (transform1 tape1) `shouldBe` Symbol 1
+    value (transform2 tape2) `shouldBe` Symbol 0
 
   it "should allow complicated stuff" $ do
     let

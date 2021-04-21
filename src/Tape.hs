@@ -35,10 +35,12 @@ empty = Cell Blank empty empty
 
 -- | Converts a list into a `Tape`
 fromList :: [Symbol a] -> Tape a
-fromList = fromList' empty
+fromList xs = h
+  where h = fromList' (updateRight h empty) xs
 
 fromList' :: Tape a -> [Symbol a] -> Tape a
-fromList' l []     = Cell Blank l empty
+fromList' l []     = h
+  where h = Cell Blank l (updateLeft h empty)
 fromList' l (x:xs) = h
   where h = Cell{ value = x, left = l, right = fromList' h xs }
 
