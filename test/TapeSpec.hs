@@ -29,6 +29,14 @@ tapeTests = describe "Tape" $ do
     let tape2 = write (Symbol "5") $ fromList [Blank, Symbol "2", Symbol "3", Symbol "4"]
     toList tape2 `shouldBe` [Symbol "5", Symbol "2", Symbol "3", Symbol "4"]
 
+  it "should move past blanks correctly" $ do
+    let
+      tape = fromList [Symbol 0, Blank, Symbol 1]
+      transform = move R . move R . move R
+      output = value (transform tape)
+
+    output `shouldBe` Symbol 1
+
   it "should allow complicated stuff" $ do
     let
       tape = fromList [Symbol "I", Symbol "I", Blank, Symbol "I"]
