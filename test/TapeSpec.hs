@@ -50,7 +50,7 @@ tapeTests = describe "Tape" $ do
   it "should allow more complicated stuff" $ do
     let
       tape = fromList [Symbol "I", Symbol "I", Blank, Symbol "I"]
-      transform =move R . write (Blank) . move L . move L . move L . move R . write (Symbol "X") . move R . move R
+      transform = move R . write Blank . move L . move L . move L . move R . write (Symbol "X") . move R . move R
       output = toList (transform tape)
 
     output `shouldBe` [Symbol "I", Symbol "X", Symbol "I"]

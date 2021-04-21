@@ -40,9 +40,9 @@ fromList xs = h
 
 fromList' :: Tape a -> [Symbol a] -> Tape a
 fromList' l []     = h
-  where h = Cell Blank l (updateLeft h empty)
+  where h = Cell Blank (updateRight h l) (updateLeft h empty)
 fromList' l (x:xs) = h
-  where h = Cell{ value = x, left = l, right = fromList' h xs }
+  where h = Cell{ value = x, left = updateRight h l, right = fromList' h xs }
 
 -- | Converts a `Tape` into a list (it only traverses the tape to the right)
 toList :: Tape a -> [Symbol a]
