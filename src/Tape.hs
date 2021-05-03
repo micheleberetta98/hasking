@@ -39,8 +39,7 @@ fromList xs = h
   where h = fromList' (updateRight h empty) xs
 
 fromList' :: Tape a -> [Symbol a] -> Tape a
-fromList' l []     = h
-  where h = Cell Blank (updateRight h l) (updateLeft h empty)
+fromList' l []     = write Blank l
 fromList' l (x:xs) = h
   where h = Cell{ value = x, left = updateRight h l, right = fromList' h xs }
 
