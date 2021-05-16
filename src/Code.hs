@@ -66,9 +66,9 @@ build :: [WithErrors Instruction] -> WithErrors MachineCode
 build ls =
   if null errs
     then sequence ls >>= buildMachine
-    else Left $ foldl' (<>) mempty errs
+    else Left $ foldl' (++) [] errs
   where
-    errs = map (fromLeft mempty) $ filter isLeft ls
+    errs = map (fromLeft []) $ filter isLeft ls
 
 -- | Builds the `MachineCode` given a list of instructions and their lines
 buildMachine :: [Instruction] -> WithErrors MachineCode
