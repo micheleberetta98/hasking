@@ -109,23 +109,33 @@ goBack status = goBack' $ history status
 
 -- | Draws the entire UI
 drawUI :: Status -> [Widget Name]
-drawUI m =
-  [ str " ~ ~ The Hasking Simulator ~ ~"
-  <=> (drawTape m <+> drawInstructions)
-  <=> (drawCurrent m <+> drawNext m <+> drawPrevious m)
+drawUI status =
+  [ drawTitle status
+  <=> drawTape status
+  <=> (drawCurrent status <+> drawNext status <+> drawPrevious status)
+  <=> drawInstructions
   ]
+
+-- | Draws the title, displaying the error message (if there's any) or if the
+-- computation has terminated
+drawTitle :: Status -> Widget n
+drawTitle status = drawTitle' (errorMessage status) (isFinal status)
+  where
+    drawTitle' (Just msg) _ = str $ " !!! " ++ msg ++ " !!! "
+    drawTitle' _ True       = str " === You reached the end! ==="
+    drawTitle' _ _          = str "~ ~ ~ The Hasking Simulator ~ ~ ~"
 
 -- | Draws the tape box
 drawTape :: Status -> Widget Name
 drawTape status =
   box totalWidth 8 "Tape" $ vBox
     [ padBottom (Pad 1) $ str tapeString
-    , str (leftSpaces ++ "^")
+    , str (leftSpaces ++ "∆")
     ]
   where
-    fixedList = toFixedList 10 (tape status)
+    fixedList = toFixedList 15 (tape status)
     tapeString = unwords . map pretty $ fixedList
-    halfTapeString = length . unwords . map pretty . take 10 $ fixedList
+    halfTapeString = length . unwords . map pretty . take 15 $ fixedList
     leftSpaces = replicate (halfTapeString + 1) ' '
     totalWidth = length tapeString + 2
 
@@ -154,10 +164,10 @@ drawPrevious = statusBox "Previous" . drawPrevious' . history
 
 -- | Draws the instructions box
 drawInstructions :: Widget Name
-drawInstructions = box 20 9 "Instructions" $ vBox
-  [ str "n - Go forward"
-  , str "b - Go back"
-  , str "q - Quit"
+drawInstructions = box 63 9 "Instructions" $ vBox
+  [ str "n - Go to the next state, i.e. run a single instruction"
+  , str "b - Go back in history (stays the same if there's none)"
+  , str "q - Quit the program"
   ]
 
 -- | A generic box for a status
