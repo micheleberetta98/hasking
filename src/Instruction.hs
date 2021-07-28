@@ -23,14 +23,14 @@ data Command = Begin | Final
   deriving (Show, Eq)
 
 -- | An instruction for the turing machine can be
--- - A `Step` which has
+-- - A @Step@ which has
 --   - A state name (state id)
 --   - Something to read (value)
 --   - A new state name (state id)
 --   - Something to write (value)
---   - A movement (`Direction`)
--- - A `Control`, which has a command and a list of states
--- - A `TapeValue`, the input tape
+--   - A movement (@Direction@)
+-- - A @Control@, which has a command and a list of states
+-- - A @TapeValue@, the input tape
 data Instruction =
   Step
     { fromState    :: State String
@@ -50,8 +50,8 @@ data Instruction =
 -- Parsing a single instruction
 ------------------------------------------------
 
--- | Parses an instruction in the form  of a step such as `(fromState valueRead toState valueWritten dir)`
--- or in the form of a control such as `[NAME s1 s2 s3 ...]`
+-- | Parses an instruction in the form  of a step such as @(fromState valueRead toState valueWritten dir)@
+-- or in the form of a control such as @[NAME s1 s2 s3 ...]@
 -- parseInstruction :: String -> Instruction
 parseInstruction :: String -> Either ErrorType Instruction
 parseInstruction s =
@@ -60,7 +60,7 @@ parseInstruction s =
     Just (_, _)  -> Left UnrecognizedChars
     _            -> Left InvalidInstruction
 
--- | Parses a step in the such as `(s1 v1 s2 v2 dir)`
+-- | Parses a step in the such as @(s1 v1 s2 v2 dir)@
 step :: Parser Instruction
 step = delimited '(' s ')'
   where
@@ -71,13 +71,13 @@ step = delimited '(' s ')'
       <*> spaced symbol
       <*> spaced direction
 
--- | Parses a control sequence in the form `[NAME s1 s2 s3 ...]`
+-- | Parses a control sequence in the form @[NAME s1 s2 s3 ...]@
 control :: Parser Instruction
 control = delimited '[' c ']'
   where
     c = Control <$> spaced cmd <*> zeroOrMore (spaced state)
 
--- | Parses the initial value of the tape, namely `{Symbol Symbol ...}`
+-- | Parses the initial value of the tape, namely @{Symbol Symbol ...}@
 tape :: Parser Instruction
 tape = delimited '{' t '}'
   where t = TapeValue <$> zeroOrMore (spaced symbol)
@@ -127,9 +127,9 @@ cmd = toCommand <$> (string "BEGIN" <|> string "FINAL")
     toCommand "FINAL" = Final
     toCommand _       = Begin -- Fallback, should never happen
 
--- | A utility to extend a single `Parser a`, which will
--- | parse all instances of `a parser b`, ignoring the values of
--- | `a` and `b` themselves
+-- | A utility to extend a single @Parser a@, which will
+-- | parse all instances of @a parser b@, ignoring the values of
+-- | @a@ and @b@ themselves
 delimited :: Char -> Parser a -> Char -> Parser a
 delimited a parser b = delimiter a *> parser <* delimiter b
   where delimiter = spaced . char

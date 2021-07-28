@@ -21,15 +21,15 @@ import           Data.Char           (isAlpha, isAlphaNum, isSpace)
 -- Data declarations
 -----------------------------------------------
 
--- | A `Parser` is a function that, when executed on a string, returns
--- maybe a value `a` followed by the rest of the string
+-- | A @Parser@ is a function that, when executed on a string, returns
+-- maybe a value @a@ followed by the rest of the string
 newtype Parser a = Parser { runParser :: String -> Maybe (a, String) }
 
 ------------------------------------------------
 -- Parser functions and utilities
 ------------------------------------------------
 
--- | Parses a single char that satisfies the predicate `p`
+-- | Parses a single char that satisfies the predicate @p@
 satisfy :: (Char -> Bool) -> Parser Char
 satisfy p = Parser f
   where
@@ -38,7 +38,7 @@ satisfy p = Parser f
       | p x       = Just (x, xs)
       | otherwise = Nothing
 
--- | Parser for a single char `c`
+-- | Parser for a single char @c@
 char :: Char -> Parser Char
 char c = satisfy (== c)
 
@@ -63,7 +63,7 @@ anyOf elems = oneOrMore $ satisfy (`elem` elems)
 identifier :: Parser String
 identifier = (:) <$> satisfy isAlpha <*> zeroOrMore (satisfy isAlphaNum)
 
--- | Utility to transform a parser `p` into a parser of the same type, but with
+-- | Utility to transform a parser @p@ into a parser of the same type, but with
 -- spaces (or no spaces) around
 spaced :: Parser a -> Parser a
 spaced p = spaces *> p <* spaces
@@ -77,11 +77,11 @@ string (c:cs) = (:) <$> char c <*> string cs
 -- Repetitions
 ------------------------------------------------
 
--- | Parses zero or more occurences given a parser `p`
+-- | Parses zero or more occurences given a parser @p@
 zeroOrMore ::  Parser a -> Parser [a]
 zeroOrMore p = oneOrMore p <|> pure []
 
--- | Parses one or more occurences given a parser `p`
+-- | Parses one or more occurences given a parser @p@
 oneOrMore :: Parser a -> Parser [a]
 oneOrMore p = (:) <$> p <*> zeroOrMore p
 

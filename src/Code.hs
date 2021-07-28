@@ -20,7 +20,7 @@ import           Validation          (Validation (..), whenIsOk)
 -- Data types
 ------------------------------------------------
 
--- | The raw lines that define the behaviour of the machine, each line defines an `Instruction`
+-- | The raw lines that define the behaviour of the machine, each line defines an @Instruction@
 type Code = String
 
 -- | A type with its line number
@@ -40,12 +40,12 @@ data MachineCode = MachineCode
 -- Functions for code parsing
 ------------------------------------------------
 
--- | An empty `MachineCode` structure
+-- | An empty @MachineCode@ structure
 empty :: MachineCode
 empty = MachineCode M.empty (State "") [] T.empty
 
--- | It converts the code into a `MachineCode` structure, with transitions, initial and final states
--- It returns `Left ErrorList` if something goes wrong
+-- | It converts the code into a @MachineCode@ structure, with transitions, initial and final states
+-- It returns @Left ErrorList@ if something goes wrong
 fromCode :: Code -> WithErrors MachineCode
 fromCode = build . map formatError . validateInstructions . parseInstructions . sanitize
   where
@@ -63,12 +63,12 @@ sanitize = filter notEmpty . map stripComment . addNumbers . lines
     stripComment = fmap (dropWhile isSpace . takeWhile (/= ';'))
     notEmpty = not . null . snd
 
--- | Builds the `MachineCode` structure if all the instructions are correct, or it returns
--- a `Left ErrorList` with all the errors
+-- | Builds the @MachineCode@ structure if all the instructions are correct, or it returns
+-- a @Left ErrorList@ with all the errors
 build :: [WithErrors Instruction] -> WithErrors MachineCode
 build = whenIsOk validateMachine . foldl' (liftA2 updateCode) (Ok empty)
 
--- | Validates the entire `MachineCode`
+-- | Validates the entire @MachineCode@
 validateMachine :: MachineCode -> WithErrors MachineCode
 validateMachine (MachineCode trans initial finals tape) =
   MachineCode

@@ -21,7 +21,7 @@ instance Pretty String where
 instance Pretty Int where
   pretty = show
 
--- | Wraps a `Pretty` instance content in two delimiters
+-- | Wraps a @Pretty@ instance content in two delimiters
 wrap :: (Pretty a) => String -> a -> String -> String
 wrap c1 content c2 = c1 ++ pretty content ++ c2
 
@@ -29,6 +29,6 @@ wrap c1 content c2 = c1 ++ pretty content ++ c2
 prettyList :: (Pretty a) => [a] -> String
 prettyList = unwords . map pretty
 
--- | Prettify all elements in a list and joins them with `sep`
+-- | Prettify all elements in a list and joins them with @sep@
 prettyList' :: Pretty a => String -> [a] -> String
 prettyList' sep = intercalate sep . map pretty
