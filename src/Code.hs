@@ -3,17 +3,18 @@ module Code
   , fromCode
   ) where
 
-import           Control.Monad ((>=>))
-import           Data.Char     (isSpace)
-import           Data.Either   (fromLeft, isLeft)
-import           Data.List     (foldl')
-import qualified Data.Map      as M
-import           Error         (Error (..), ErrorType (..))
-import           Instruction   (Command (..), Instruction (..),
-                                parseInstruction, validate)
-import           Tape          (Tape)
-import qualified Tape          as T
-import           TuringMachine (From, State (State), To, Transitions)
+import           Control.Applicative (Applicative (liftA2))
+import           Data.Char           (isSpace)
+import           Data.Either         (fromLeft, isLeft)
+import           Data.List           (foldl')
+import qualified Data.Map            as M
+import           Error               (Error (..), ErrorType (..))
+import           Instruction         (Command (..), Instruction (..),
+                                      parseInstruction, validate)
+import           Tape                (Tape)
+import qualified Tape                as T
+import           TuringMachine       (From, State (State), To, Transitions)
+import           Validation          (Validation (..), whenIsOk)
 
 ------------------------------------------------
 -- Data types
@@ -25,7 +26,7 @@ type Code = String
 -- | A type with its line number
 type WithLine a = (Int, a)
 
-type WithErrors = Either [Error]
+type WithErrors = Validation [Error]
 
 -- | The whole machine specification, derived from a piece of code
 data MachineCode = MachineCode
@@ -50,8 +51,8 @@ fromCode = build . map formatError . validateInstructions . parseInstructions . 
   where
     parseInstructions = map (fmap parseInstruction)
     validateInstructions = map (fmap (>>= validate))
-    formatError (i, Left e)  = Left [LineError i e]
-    formatError (_, Right x) = Right x
+    formatError (i, Left e)  = Err [LineError i e]
+    formatError (_, Right x) = Ok x
 
 -- | Removes the comments and the empty lines from the code, giving back only
 -- the interesting bits
@@ -65,31 +66,24 @@ sanitize = filter notEmpty . map stripComment . addNumbers . lines
 -- | Builds the `MachineCode` structure if all the instructions are correct, or it returns
 -- a `Left ErrorList` with all the errors
 build :: [WithErrors Instruction] -> WithErrors MachineCode
-build ls =
-  if null errs
-    then sequence ls >>= buildMachine
-    else Left $ foldl' (++) [] errs
-  where
-    errs = map (fromLeft []) $ filter isLeft ls
-
--- | Builds the `MachineCode` given a list of instructions and their lines
-buildMachine :: [Instruction] -> WithErrors MachineCode
-buildMachine = validateMachine . foldl' updateCode empty
+build = whenIsOk validateMachine . foldl' (liftA2 updateCode) (Ok empty)
 
 -- | Validates the entire `MachineCode`
 validateMachine :: MachineCode -> WithErrors MachineCode
-validateMachine =
-  when noInputTape MissingInputTape
-    >=> when noInitialState NoInitialState
-    >=> when noFinalStates NoFinalStates
+validateMachine (MachineCode trans initial finals tape) =
+  MachineCode
+    <$> Ok trans
+    <*> checkInitialState initial
+    <*> checkFinalStates finals
+    <*> checkInputTape tape
   where
-    when fcheck err m
-      | fcheck m  = Left [SimpleError err]
-      | otherwise  = Right m
+    checkInputTape = when (null . T.toList) MissingInputTape
+    checkInitialState = when (== State "") NoInitialState
+    checkFinalStates = when null NoInitialState
 
-    noInputTape = null . T.toList . initialTape
-    noInitialState (MachineCode _ s _ _) = s == State ""
-    noFinalStates (MachineCode _ _ fs _) = null fs
+    when f err x
+      | f x        = Err [SimpleError err]
+      | otherwise  = Ok x
 
 ------------------------------------------------
 -- Utilities

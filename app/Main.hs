@@ -7,6 +7,7 @@ import           System.Exit   (exitFailure)
 import           System.IO     (hPutStrLn, stderr)
 import           Tape          (Symbol, Tape)
 import           TuringMachine (State, machine)
+import           Validation
 
 main :: IO ()
 main = do
@@ -18,11 +19,11 @@ main = do
 runMachine :: String -> IO String
 runMachine code = do
   case fromCode code of
-    Left errors -> do
+    Err errors -> do
       hPutStrLn stderr $ pretty errors
       exitFailure
 
-    Right (MachineCode ts start finish tape) -> do
+    Ok (MachineCode ts start finish tape) -> do
       result (machine ts start finish tape)
 
 -- | Adds the tape to the provided code
