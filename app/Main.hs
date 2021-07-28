@@ -1,19 +1,23 @@
 module Main (main) where
 
 import           Code          (MachineCode (MachineCode), fromCode)
-import           Opts          (getOpts)
+import           Control.Monad (void)
+import           Opts          (Options (Options), getOpts)
 import           Pretty        (Pretty (..))
 import           System.Exit   (exitFailure)
 import           System.IO     (hPutStrLn, stderr)
 import           Tape          (Symbol, Tape)
 import           TuringMachine (State, machine)
-import           Validation
+import           UI            (Machine (Machine), runUiWith)
+import           Validation    (Validation (Err, Ok))
 
 main :: IO ()
 main = do
   opts <- getOpts
-  let (input, output, tape) = opts
-  input >>= runMachine . addTape tape >>= output
+  let (Options input output tape interactive) = opts
+  if interactive
+    then void (runUiWith Machine)
+    else input >>= runMachine . addTape tape >>= output
 
 -- | Runs the machine with the specified code
 runMachine :: String -> IO String
