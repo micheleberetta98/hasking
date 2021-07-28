@@ -155,8 +155,8 @@ drawPrevious = statusBox "Previous" . drawPrevious' . history
 -- | Draws the instructions box
 drawInstructions :: Widget Name
 drawInstructions = box 20 9 "Instructions" $ vBox
-  [ str "n - Go to next state"
-  , str "b - Go back in history"
+  [ str "n - Go forward"
+  , str "b - Go back"
   , str "q - Quit"
   ]
 
