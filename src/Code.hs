@@ -3,6 +3,7 @@ module Code
   , fromCode
   ) where
 
+import           Control.Monad ((>=>))
 import           Data.Char     (isSpace)
 import           Data.Either   (fromLeft, isLeft)
 import           Data.List     (foldl')
@@ -77,14 +78,14 @@ buildMachine = validateMachine . foldl' updateCode empty
 
 -- | Validates the entire `MachineCode`
 validateMachine :: MachineCode -> WithErrors MachineCode
-validateMachine m =
-  when noInputTape MissingInputTape m
-    >>= when noInitialState NoInitialState
-    >>= when noFinalStates NoFinalStates
+validateMachine =
+  when noInputTape MissingInputTape
+    >=> when noInitialState NoInitialState
+    >=> when noFinalStates NoFinalStates
   where
-    when fcheck err m'
-      | fcheck m'  = Left [SimpleError err]
-      | otherwise  = Right m'
+    when fcheck err m
+      | fcheck m  = Left [SimpleError err]
+      | otherwise  = Right m
 
     noInputTape = null . T.toList . initialTape
     noInitialState (MachineCode _ s _ _) = s == State ""
