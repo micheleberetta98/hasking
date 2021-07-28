@@ -2,12 +2,13 @@ module Tape
   ( Tape
   , Direction(..)
   , Symbol(..)
+  , empty
   , fromList
+  , move
+  , toFixedList
   , toList
   , value
   , write
-  , move
-  , empty
   ) where
 
 import           Pretty (Pretty (..), prettyList, wrap)
@@ -20,7 +21,10 @@ import           Pretty (Pretty (..), prettyList, wrap)
 data Symbol a = Blank | Symbol a deriving (Show, Eq)
 
 -- | An infinite Tape of Symbols of type @a@, which can be moved either *left* or *right*
-data Tape a = Cell { value :: Symbol a, left :: Tape a, right :: Tape a }
+data Tape a = Cell
+  { value :: Symbol a
+  , left  :: Tape a
+  , right :: Tape a }
   deriving (Show, Eq)
 
 -- | Represents movement (@L@ = left, @R@ = right, @S@ = stay)
@@ -48,6 +52,23 @@ fromList' l (x:xs) = h
 toList :: Tape a -> [Symbol a]
 toList (Cell Blank _ _) = []
 toList (Cell x _ next)  = x : toList next
+
+-- | Returns a fixed number of symbols in a tape, in particular
+-- the @n@ symbols on the left and the @n@ symbols on the right
+-- from the current position
+toFixedList :: (Pretty a) => Int -> Tape a -> [Symbol a]
+toFixedList n tape
+  | n < 0     = []
+  | n == 0    = [value tape]
+  | otherwise = leftList ++ [value tape] ++ rightList
+  where
+    leftList = reverse $ toFixedList' n left tape
+    rightList = toFixedList' n right tape
+
+    toFixedList' 0 _ _ = []
+    toFixedList' m k t =
+      let t' = k t
+      in value t' : toFixedList' (m-1) k t'
 
 -----------------------------------------------
 -- Tape actions

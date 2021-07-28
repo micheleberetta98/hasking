@@ -55,3 +55,13 @@ tapeTests = describe "Tape" $ do
 
     output `shouldBe` [Symbol "I", Symbol "X", Symbol "I"]
 
+  it "should be able to produce a 'long string'" $ do
+    let
+      tape :: Tape Int
+      tape = fromList [Symbol 0, Symbol 1, Blank, Symbol 2]
+
+    toFixedList 0 tape `shouldBe` [Symbol 0]
+    toFixedList (-1) tape `shouldBe` []
+    toFixedList 1 tape `shouldBe` [Blank, Symbol 0, Symbol 1]
+    toFixedList 5 tape `shouldBe` [Blank, Blank, Blank, Blank, Blank, Symbol 0, Symbol 1, Blank, Symbol 2, Blank, Blank]
+
