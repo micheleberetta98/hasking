@@ -1,5 +1,6 @@
 module Instruction
   ( Instruction(..)
+  , Command(..)
   , parseInstruction
   , validate
   ) where
@@ -8,7 +9,7 @@ import           Control.Applicative (Alternative ((<|>)))
 import           Data.Functor        (($>))
 import           Error               (ErrorType (..))
 import           Parser              (Parser (..), alpha, alphaNum, anyOf, char,
-                                      identifier, spaced, zeroOrMore)
+                                      identifier, spaced, string, zeroOrMore)
 import           Pretty              (Pretty (..), prettyList, wrap)
 import           Tape                (Direction (..), Symbol (..))
 import           TuringMachine       (State (..))
@@ -16,6 +17,10 @@ import           TuringMachine       (State (..))
 ------------------------------------------------
 -- Instructions and its types
 ------------------------------------------------
+
+-- | The possible commands
+data Command = Begin | Final
+  deriving (Show, Eq)
 
 -- | An instruction for the turing machine can be
 -- - A `Step` which has
@@ -35,7 +40,7 @@ data Instruction =
     , dir          :: Direction
     }
   | Control
-    { command      :: String
+    { command      :: Command
     , controlValue :: [State String]
     }
   | TapeValue [Symbol String]
@@ -70,7 +75,7 @@ step = delimited '(' s ')'
 control :: Parser Instruction
 control = delimited '[' c ']'
   where
-    c = Control <$> spaced alpha <*> zeroOrMore (spaced state)
+    c = Control <$> spaced cmd <*> zeroOrMore (spaced state)
 
 -- | Parses the initial value of the tape, namely `{Symbol Symbol ...}`
 tape :: Parser Instruction
@@ -83,12 +88,12 @@ tape = delimited '{' t '}'
 
 -- | It validates a single instruction, that could have been parsed correctly or not
 validate :: Instruction -> Either ErrorType Instruction
-validate (Control "BEGIN" [])    = Left NoInitialState
-validate x@(Control "BEGIN" [_]) = Right x
-validate (Control "BEGIN" _)     = Left MultiInitialState
-validate (Control "FINAL" [])    = Left NoFinalStates
-validate (TapeValue [])          = Left EmptyInputTape
-validate x                       = Right x
+validate (Control Begin [])    = Left NoInitialState
+validate x@(Control Begin [_]) = Right x
+validate (Control Begin _)     = Left MultiInitialState
+validate (Control Final [])    = Left NoFinalStates
+validate (TapeValue [])        = Left EmptyInputTape
+validate x                     = Right x
 
 ------------------------------------------------
 -- Utils
@@ -114,6 +119,14 @@ direction = toDirection <$> (char 'L' <|> char 'R' <|> char 'S')
     toDirection 'S' = S
     toDirection _   = S -- Fallback, should never happen
 
+-- | Parses a command
+cmd :: Parser Command
+cmd = toCommand <$> (string "BEGIN" <|> string "FINAL")
+  where
+    toCommand "BEGIN" = Begin
+    toCommand "FINAL" = Final
+    toCommand _       = Begin -- Fallback, should never happen
+
 -- | A utility to extend a single `Parser a`, which will
 -- | parse all instances of `a parser b`, ignoring the values of
 -- | `a` and `b` themselves
@@ -132,5 +145,9 @@ instance Pretty Instruction where
       v1' = pretty v1
       s2' = pretty s2
       v2' = pretty v2
-  pretty (Control n v) = wrap "[" (prettyList (n : map pretty v)) "]"
+  pretty (Control n v) = wrap "[" (prettyList (pretty n : map pretty v)) "]"
   pretty (TapeValue t)     = wrap "{" (prettyList t) "}"
+
+instance Pretty Command where
+  pretty Begin = "BEGIN"
+  pretty Final = "FINAL"

@@ -7,6 +7,7 @@ module Parser
   , identifier
   , spaced
   , spaces
+  , string
   , zeroOrMore
   ) where
 
@@ -66,6 +67,11 @@ identifier = (:) <$> satisfy isAlpha <*> zeroOrMore (satisfy isAlphaNum)
 -- spaces (or no spaces) around
 spaced :: Parser a -> Parser a
 spaced p = spaces *> p <* spaces
+
+-- | Parses an exact string given as an argument
+string :: String -> Parser String
+string ""     = pure ""
+string (c:cs) = (:) <$> char c <*> string cs
 
 ------------------------------------------------
 -- Repetitions

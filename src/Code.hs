@@ -8,7 +8,8 @@ import           Data.Either   (fromLeft, isLeft)
 import           Data.List     (foldl')
 import qualified Data.Map      as M
 import           Error         (Error (..), ErrorType (..))
-import           Instruction   (Instruction (..), parseInstruction, validate)
+import           Instruction   (Command (..), Instruction (..),
+                                parseInstruction, validate)
 import           Tape          (Tape)
 import qualified Tape          as T
 import           TuringMachine (From, State (State), To, Transitions)
@@ -95,11 +96,10 @@ validateMachine m =
 
 -- | Updates the machine code given a single instruction
 updateCode :: MachineCode -> Instruction -> MachineCode
-updateCode c (Control "BEGIN" s)  = c{ initialState = head s }
-updateCode c (Control "FINAL" s)  = c{ finalStates = s }
+updateCode c (Control Begin s)    = c{ initialState = head s }
+updateCode c (Control Final s)    = c{ finalStates = s }
 updateCode c (TapeValue tape)     = c{ initialTape = T.fromList tape }
 updateCode c (Step s1 v1 s2 v2 d) = addTransition ((s1, v1), (s2, v2, d)) c
-updateCode _ (Control x _)        = error $ "This shouldn't have happened, found invalid control with name `" ++ x ++ "`"
 
 -- | Inserts a new transitions into the existing ones
 addTransition :: (From String String, To String String) -> MachineCode -> MachineCode

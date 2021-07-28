@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 73657d9a0931135dd32d5261180c296a30df7716a28092363eecb3be8e00dfb5
+-- hash: 38b511e3054e96681dff109dd14d0167179ff1e7060e44e04866d6aac4391fef
 
 name:           hasking
-version:        1.3.0
+version:        1.3.1
 description:    Please see the README on GitHub at <https://github.com/micheleberetta98/hasking#readme>
 homepage:       https://github.com/micheleberetta98/hasking#readme
 bug-reports:    https://github.com/micheleberetta98/hasking/issues
@@ -33,6 +33,7 @@ library
       Pretty
       Tape
       TuringMachine
+      Validation
   other-modules:
       Paths_hasking
   hs-source-dirs:
