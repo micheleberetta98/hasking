@@ -79,7 +79,7 @@ validateMachine (MachineCode trans initial finals tape) =
   where
     checkInputTape = when (null . T.toList) MissingInputTape
     checkInitialState = when (== State "") NoInitialState
-    checkFinalStates = when null NoInitialState
+    checkFinalStates = when null NoFinalStates
 
     when f err x
       | f x        = Err [SimpleError err]
