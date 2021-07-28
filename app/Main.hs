@@ -8,27 +8,30 @@ import           System.Exit   (exitFailure)
 import           System.IO     (hPutStrLn, stderr)
 import           Tape          (Symbol, Tape)
 import           TuringMachine (State, machine)
-import           UI            (Machine (Machine), runUiWith)
+import           UI            (runUiWith)
 import           Validation    (Validation (Err, Ok))
 
 main :: IO ()
 main = do
   opts <- getOpts
   let (Options input output tape interactive) = opts
+  m <- input >>= getMachine . addTape tape
   if interactive
-    then void (runUiWith Machine)
-    else input >>= runMachine . addTape tape >>= output
+    then void (runUiWith m)
+    else runMachine m >>= output
 
--- | Runs the machine with the specified code
-runMachine :: String -> IO String
-runMachine code = do
+getMachine :: String -> IO MachineCode
+getMachine code =
   case fromCode code of
     Err errors -> do
       hPutStrLn stderr $ pretty errors
       exitFailure
 
-    Ok (MachineCode ts start finish tape) -> do
-      result (machine ts start finish tape)
+    Ok m -> return m
+
+-- | Runs the machine with the specified code
+runMachine :: MachineCode -> IO String
+runMachine (MachineCode ts start finish tape) = result (machine ts start finish tape)
 
 -- | Adds the tape to the provided code
 addTape :: Maybe (Tape String) -> String -> String

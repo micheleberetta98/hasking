@@ -1,6 +1,6 @@
 module UI
   ( runUiWith
-  , Machine(Machine)
+  , Status
   , Tick(Tick)
   )
 where
@@ -11,13 +11,20 @@ import qualified Brick.Widgets.Border.Style as BS
 import qualified Brick.Widgets.Center       as C
 -- import           Data.Sequence              (Seq)
 -- import qualified Data.Sequence              as S
+import           Code                       (MachineCode (initialState))
 import qualified Graphics.Vty               as V
+-- import           Tape
+import           TuringMachine              (State)
 
 ------------------------------------------------
 -- Types
 ------------------------------------------------
 
-data Machine = Machine
+data Status = Status
+  { machine      :: MachineCode
+  , history      :: [Status]
+  , currentState :: State String
+  }
 data Tick = Tick
 type Name = ()
 
@@ -25,10 +32,11 @@ type Name = ()
 -- Functions
 ------------------------------------------------
 
-runUiWith :: Machine -> IO Machine
-runUiWith = defaultMain appUi
+runUiWith :: MachineCode -> IO Status
+runUiWith code = defaultMain appUi $
+  Status{ machine = code, history = [], currentState = initialState code }
 
-appUi :: App Machine Tick Name
+appUi :: App Status Tick Name
 appUi = App
   { appDraw = drawUI
   , appChooseCursor = neverShowCursor
@@ -37,16 +45,16 @@ appUi = App
   , appAttrMap = const theMap
   }
 
-handleEvent :: Machine -> BrickEvent Name Tick -> EventM Name (Next Machine)
+handleEvent :: Status -> BrickEvent Name Tick -> EventM Name (Next Status)
 handleEvent m (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue $ m
 handleEvent m (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue $ m
 handleEvent m (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt m
 handleEvent m (VtyEvent (V.EvKey V.KEsc []))        = halt m
 handleEvent m _                                     = continue m
 
-drawUI :: Machine -> [Widget Name]
+drawUI :: Status -> [Widget Name]
 drawUI m =
-  [C.center $ padRight (Pad 2) (drawStats m)]
+  [padRight (Pad 2) (drawStats m)]
 
 drawStats :: p -> Widget Name
 drawStats _ = hLimit 11
