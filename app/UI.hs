@@ -180,7 +180,7 @@ drawPrevious = statusBox "Previous" . machineState . drawPrevious' . history
     drawPrevious' []    = [Just "-", Just "-", Nothing]
     drawPrevious' (h:_) =
       [ Just . pretty . state . machine $ h
-      , Just . pretty . state . machine $ h
+      , Just . pretty . symbol . machine $ h
       , Nothing
       ]
 
