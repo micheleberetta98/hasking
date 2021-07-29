@@ -139,7 +139,10 @@ drawUI status =
 drawTitle :: ProcessingState -> Widget n
 drawTitle = filled . drawTitle'
   where
-    filled x = hLimit 63 $ B.hBorder <+> x <+> B.hBorder
+    filled x =
+      hLimit 63
+      $ withBorderStyle BS.unicodeBold
+      $ B.hBorder <+> str " " <+> x <+> str " " <+> B.hBorder
     drawTitle' (Error msg) = withAttr errorAttr $ str msg
     drawTitle' Finished    = withAttr finishedAttr $ str "You reached the end!"
     drawTitle' Processing  = withAttr titleAttr $ str "Hasking Simulator"
