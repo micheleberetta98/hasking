@@ -64,6 +64,7 @@ app = App
 -- Event handling
 ------------------------------------------------
 
+-- | Handles a generic event
 handleEvent :: Status -> BrickEvent Name Tick -> EventM Name (Next Status)
 handleEvent m (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue $ executeStep m
 handleEvent m (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue $ goBack m
@@ -71,14 +72,18 @@ handleEvent m (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt m
 handleEvent m (VtyEvent (V.EvKey V.KEsc []))        = halt m
 handleEvent m _                                     = continue m
 
-executeStep :: Status -> Status
-executeStep s = updateStatus s (transition s)
-
 ------------------------------------------------
 -- Status update
 ------------------------------------------------
 
--- | Executes a single machine, setting the error if necessary and checking if
+-- | Executes a single step forward if the machine hasn't finished
+executeStep :: Status -> Status
+executeStep s
+  | isFinal s = s
+  | otherwise = updateStatus s (transition s)
+
+
+-- | Executes a single machine step, setting the error if necessary and checking if
 -- the machine has reached a final state
 updateStatus :: Status -> Either (From String String) (To String String) -> Status
 updateStatus status (Left _) = status{ invalidStateMsg = Just "Invalid state reached" }
