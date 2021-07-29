@@ -14,20 +14,31 @@ import qualified Graphics.Vty               as V
 import           Pretty                     (Pretty (pretty))
 import           Tape                       (Symbol, Tape (..), move,
                                              toFixedList, write)
-import           TuringMachine              (From, State, To, runTransition)
+import           TuringMachine              (From, State, To, Transitions,
+                                             runTransition)
 
 ------------------------------------------------
 -- Types
 ------------------------------------------------
 
+data ProcessingState = Processing | Finished | Error String
+  deriving (Show, Eq)
+
+data MachineState = MachineState
+  { trans  :: Transitions String String
+  , state  :: State String
+  , tape   :: Tape String
+  , finals :: [State String]
+  }
+
+-- | A little helper
+symbol :: MachineState -> Symbol String
+symbol = value . tape
+
 data Status = Status
-  { machine         :: MachineCode
+  { machine         :: MachineState
   , history         :: [Status]
-  , currentState    :: State String
-  , currentSymbol   :: Symbol String
-  , tape            :: Tape String
-  , invalidStateMsg :: Maybe String
-  , isFinal         :: Bool
+  , processingState :: ProcessingState
   }
 type CustomEvent = ()
 type Name = ()
@@ -40,13 +51,14 @@ type Name = ()
 runUiWith :: MachineCode -> IO Status
 runUiWith code = defaultMain app $
   Status
-    { machine = code
+    { machine = MachineState
+      { trans = transitions code
+      , state = initialState code
+      , tape = initialTape code
+      , finals = finalStates code
+      }
     , history = []
-    , currentState = initialState code
-    , currentSymbol = value (initialTape code)
-    , tape = initialTape code
-    , invalidStateMsg = Nothing
-    , isFinal = False
+    , processingState = Processing
     }
 
 -- | The app definition
@@ -78,34 +90,30 @@ handleEvent m _                                     = continue m
 -- | Executes a single step forward if the machine hasn't finished
 executeStep :: Status -> Status
 executeStep s
-  | isFinal s = s
-  | otherwise = updateStatus s (transition s)
+  | processingState s == Finished = s
+  | otherwise                     = updateStatus s (step $ machine s)
 
 
 -- | Executes a single machine step, setting the error if necessary and checking if
 -- the machine has reached a final state
 updateStatus :: Status -> Either (From String String) (To String String) -> Status
-updateStatus status (Left _) = status{ invalidStateMsg = Just "Invalid state reached" }
+updateStatus status (Left _) = status{ processingState = Error "Invalid state reached" }
 updateStatus status (Right (s', out, dir)) =
-  let t = move dir $ write out $ tape status
-      fs = finalStates (machine status)
-      prevs = history status
+  let
+    m = machine status
+    t = move dir . write out . tape $ m
+    fs = finals m
   in status
-    { currentState = s'
-    , currentSymbol = value t
-    , tape = t
-    , isFinal = s' `elem` fs
-    , history = status : prevs
+    { machine = m{ state = s', tape = t }
+    , processingState = if s' `elem` fs then Finished else Processing
+    , history = status : history status
     }
 
--- | Runs a single transition on @Status@
-transition :: Status -> Either (From String String) (To String String)
-transition status = runTransition ts (state, symbol)
-  where
-    ts = transitions $ machine status
-    state = currentState status
-    symbol = currentSymbol status
+-- | Runs a single transition on @MachineState@
+step :: MachineState -> Either (From String String) (To String String)
+step m = runTransition (trans m) (state m, symbol m)
 
+-- | Go back in history (if there's any)
 goBack :: Status -> Status
 goBack status = goBack' $ history status
   where
@@ -119,58 +127,57 @@ goBack status = goBack' $ history status
 -- | Draws the entire UI
 drawUI :: Status -> [Widget Name]
 drawUI status =
-  [ drawTitle status
-  <=> drawTape (tape status)
-  <=> (drawPrevious status <+> drawCurrent status <+> drawNext status)
+  [ drawTitle (processingState status)
+  <=> drawTape m
+  <=> (drawPrevious status <+> drawCurrent m <+> drawNext m)
   <=> drawInstructions
   ]
+  where m = machine status
 
 -- | Draws the title, displaying the error message (if there's any) or if the
 -- computation has terminated
-drawTitle :: Status -> Widget n
-drawTitle status = drawTitle' (invalidStateMsg status) (isFinal status)
-  where
-    drawTitle' (Just msg) _ = withAttr errorAttr $ str (" !!! " ++ msg ++ " !!! ")
-    drawTitle' _ True       = withAttr finishedAttr $ str " === You reached the end! ==="
-    drawTitle' _ _          = str " ~~~ The Hasking Simulator ~~~"
+drawTitle :: ProcessingState -> Widget n
+drawTitle (Error msg) = withAttr errorAttr $ str (" !!! " ++ msg ++ " !!! ")
+drawTitle Finished    = withAttr finishedAttr $ str " === You reached the end! ==="
+drawTitle Processing  = str " ~~~ The Hasking Simulator ~~~"
 
 -- | Draws the tape box
-drawTape :: Tape String -> Widget Name
-drawTape t =
+drawTape :: MachineState -> Widget Name
+drawTape m =
   box 63 8 "Tape" $ vBox
     [ padBottom (Pad 1) $ str tapeString
     ,  str leftSpaces <+> str "∆"
     ]
   where
-    fixedList = toFixedList 15 t
+    fixedList = toFixedList 15 $ tape m
     tapeString = unwords . map pretty $ fixedList
     halfTapeString = length . unwords . map pretty . take 15 $ fixedList
     leftSpaces = replicate (halfTapeString + 1) ' '
 
 -- | Draws the current state box
-drawCurrent :: Status -> Widget Name
-drawCurrent status = statusBox "Current" $ statusContent
-    [ Just $ pretty (currentState status)
-    , Just $ pretty (currentSymbol status)
+drawCurrent :: MachineState -> Widget Name
+drawCurrent m = statusBox "Current" $ machineState
+    [ Just $ pretty (state m)
+    , Just $ pretty (symbol m)
     , Nothing
     ]
 
 -- | Draws the next state box
-drawNext :: Status -> Widget Name
-drawNext status = statusBox "Next" . statusContent $ map Just [s, written, dir]
+drawNext :: MachineState -> Widget Name
+drawNext m = statusBox "Next" . machineState $ map Just [s, written, dir]
   where
-    (s, written, dir) = case transition status of
+    (s, written, dir) = case step m of
       Right (s', out, d) -> (pretty s', pretty out, pretty d)
       Left _             -> ("-", "-", "-")
 
 -- | Draws the previous state box
 drawPrevious :: Status -> Widget Name
-drawPrevious = statusBox "Previous" . statusContent . drawPrevious' . history
+drawPrevious = statusBox "Previous" . machineState . drawPrevious' . history
   where
     drawPrevious' []    = [Just "-", Just "-", Nothing]
     drawPrevious' (h:_) =
-      [ Just . pretty $ currentState h
-      , Just . pretty $ currentSymbol h
+      [ Just . pretty . state . machine $ h
+      , Just . pretty . state . machine $ h
       , Nothing
       ]
 
@@ -188,8 +195,8 @@ statusBox title content = box 21 9 title $ vBox content
 
 -- | It generates a list of @Widget Name@ that can be put into a @statusBox@,
 -- showing @"State"@, @"Symbol"@ and @"Direction"@
-statusContent :: [Maybe String] -> [Widget Name]
-statusContent = map str . zipWith formatStr ["State:  ", "Symbol: ", "Dir:    "]
+machineState :: [Maybe String] -> [Widget Name]
+machineState = map str . zipWith formatStr ["State:  ", "Symbol: ", "Dir:    "]
   where
     formatStr _ Nothing    = " "
     formatStr s1 (Just s2) = s1 ++ s2
