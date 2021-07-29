@@ -127,7 +127,7 @@ goBack status = goBack' $ history status
 -- | Draws the entire UI
 drawUI :: Status -> [Widget Name]
 drawUI status =
-  [ drawTitle (processingState status)
+  [ C.center $ drawTitle (processingState status)
   <=> drawTape m
   <=> (drawPrevious status <+> drawCurrent m <+> drawNext m)
   <=> drawInstructions
@@ -137,9 +137,12 @@ drawUI status =
 -- | Draws the title, displaying the error message (if there's any) or if the
 -- computation has terminated
 drawTitle :: ProcessingState -> Widget n
-drawTitle (Error msg) = withAttr errorAttr $ str (" !!! " ++ msg ++ " !!! ")
-drawTitle Finished    = withAttr finishedAttr $ str " === You reached the end! ==="
-drawTitle Processing  = str " ~~~ The Hasking Simulator ~~~"
+drawTitle = filled . drawTitle'
+  where
+    filled x = hLimit 63 $ B.hBorder <+> x <+> B.hBorder
+    drawTitle' (Error msg) = withAttr errorAttr $ str msg
+    drawTitle' Finished    = withAttr finishedAttr $ str "You reached the end!"
+    drawTitle' Processing  = withAttr titleAttr $ str "Hasking Simulator"
 
 -- | Draws the tape box
 drawTape :: MachineState -> Widget Name
@@ -218,8 +221,9 @@ box width height title content =
 -- | The attributes map, that defines styles
 attributes :: AttrMap
 attributes = attrMap V.defAttr
-  [ (errorAttr, fg V.red)
+  [ (errorAttr, fg V.red `V.withStyle` V.bold)
   , (finishedAttr, fg V.blue `V.withStyle` V.bold)
+  , (titleAttr, fg V.white `V.withStyle` V.bold)
   ]
 
 errorAttr :: AttrName
@@ -227,3 +231,6 @@ errorAttr = "errorAttr"
 
 finishedAttr :: AttrName
 finishedAttr = "finishedAttr"
+
+titleAttr :: AttrName
+titleAttr = "titleAttr"
