@@ -98,16 +98,16 @@ executeStep s
 -- the machine has reached a final state
 updateStatus :: Status -> Either (From String String) (To String String) -> Status
 updateStatus status (Left _) = status{ processingState = Error "Invalid state reached" }
-updateStatus status (Right (s', out, dir)) =
-  let
-    m = machine status
-    t = move dir . write out . tape $ m
-    fs = finals m
-  in status
-    { machine = m{ state = s', tape = t }
-    , processingState = if s' `elem` fs then Finished else Processing
+updateStatus status (Right (state', out, dir)) =
+  status
+    { machine = m{ state = state', tape = tape' }
+    , processingState = if isFinal state' then Finished else Processing
     , history = status : history status
     }
+  where
+    m = machine status
+    tape' = move dir . write out . tape $ m
+    isFinal = (`elem` finals m)
 
 -- | Runs a single transition on @MachineState@
 step :: MachineState -> Either (From String String) (To String String)
