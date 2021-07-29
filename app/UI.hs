@@ -77,11 +77,11 @@ app = App
 
 -- | Handles a generic event
 handleEvent :: Status -> BrickEvent Name CustomEvent -> EventM Name (Next Status)
-handleEvent m (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue $ executeStep m
-handleEvent m (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue $ goBack m
-handleEvent m (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt m
-handleEvent m (VtyEvent (V.EvKey V.KEsc []))        = halt m
-handleEvent m _                                     = continue m
+handleEvent s (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue $ executeStep s
+handleEvent s (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue $ goBack s
+handleEvent s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
+handleEvent s (VtyEvent (V.EvKey V.KEsc []))        = halt s
+handleEvent s _                                     = continue s
 
 ------------------------------------------------
 -- Status update
