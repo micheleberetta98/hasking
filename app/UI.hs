@@ -140,7 +140,7 @@ drawTape :: Tape String -> Widget Name
 drawTape t =
   box 63 8 "Tape" $ vBox
     [ padBottom (Pad 1) $ str tapeString
-    , str (leftSpaces ++ "∆")
+    ,  str leftSpaces <+> str "∆"
     ]
   where
     fixedList = toFixedList 15 t
