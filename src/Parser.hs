@@ -2,9 +2,9 @@ module Parser
   ( Parser(runParser)
   , alpha
   , alphaNum
-  , anyOf
   , char
   , identifier
+  , noneOf
   , spaced
   , spaces
   , string
@@ -54,9 +54,9 @@ alpha = oneOrMore (satisfy isAlpha)
 alphaNum :: Parser String
 alphaNum = oneOrMore (satisfy isAlphaNum)
 
--- | Parses one or more of the specified characters
-anyOf :: String -> Parser String
-anyOf elems = oneOrMore $ satisfy (`elem` elems)
+-- | Parses one or more of any character that isn't in the specified ones
+noneOf :: String -> Parser String
+noneOf elems = oneOrMore $ satisfy (`notElem` elems)
 
 -- | Parses an identifier, which is given by a letter followed by zero or more
 -- letters or numbers

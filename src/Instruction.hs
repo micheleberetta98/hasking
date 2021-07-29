@@ -8,8 +8,9 @@ module Instruction
 import           Control.Applicative (Alternative ((<|>)))
 import           Data.Functor        (($>))
 import           Error               (ErrorType (..))
-import           Parser              (Parser (..), alpha, alphaNum, anyOf, char,
-                                      identifier, spaced, string, zeroOrMore)
+import           Parser              (Parser (..), alpha, alphaNum, char,
+                                      identifier, noneOf, spaced, string,
+                                      zeroOrMore)
 import           Pretty              (Pretty (..), prettyList, wrap)
 import           Tape                (Direction (..), Symbol (..))
 import           TuringMachine       (State (..))
@@ -108,7 +109,7 @@ symbol :: Parser (Symbol String)
 symbol = blank <|> (Symbol <$> value)
   where
     blank = char '.' $> Blank
-    value = alphaNum <|> anyOf "*#"
+    value = alphaNum <|> noneOf " ()[]{};"
 
 -- | Parses a direction
 direction :: Parser Direction
