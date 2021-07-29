@@ -77,11 +77,11 @@ app = App
 
 -- | Handles a generic event
 handleEvent :: Status -> BrickEvent Name CustomEvent -> EventM Name (Next Status)
-handleEvent m (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue $ executeStep m
-handleEvent m (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue $ goBack m
-handleEvent m (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt m
-handleEvent m (VtyEvent (V.EvKey V.KEsc []))        = halt m
-handleEvent m _                                     = continue m
+handleEvent s (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue $ executeStep s
+handleEvent s (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue $ goBack s
+handleEvent s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
+handleEvent s (VtyEvent (V.EvKey V.KEsc []))        = halt s
+handleEvent s _                                     = continue s
 
 ------------------------------------------------
 -- Status update
@@ -127,8 +127,8 @@ goBack status = goBack' $ history status
 -- | Draws the entire UI
 drawUI :: Status -> [Widget Name]
 drawUI status =
-  [ drawTitle (processingState status)
-  <=> drawTape m
+  [ C.center $ drawTitle (processingState status)
+  <=> drawTape m (processingState status == Processing)
   <=> (drawPrevious status <+> drawCurrent m <+> drawNext m)
   <=> drawInstructions
   ]
@@ -137,22 +137,32 @@ drawUI status =
 -- | Draws the title, displaying the error message (if there's any) or if the
 -- computation has terminated
 drawTitle :: ProcessingState -> Widget n
-drawTitle (Error msg) = withAttr errorAttr $ str (" !!! " ++ msg ++ " !!! ")
-drawTitle Finished    = withAttr finishedAttr $ str " === You reached the end! ==="
-drawTitle Processing  = str " ~~~ The Hasking Simulator ~~~"
+drawTitle = filled . drawTitle'
+  where
+    filled x =
+      hLimit 63
+      $ withBorderStyle BS.unicodeBold
+      $ B.hBorder <+> str " " <+> x <+> str " " <+> B.hBorder
+    drawTitle' (Error msg) = withAttr errorAttr $ str msg
+    drawTitle' Finished    = withAttr finishedAttr $ str "You reached the end!"
+    drawTitle' Processing  = withAttr titleAttr $ str "Hasking Simulator"
 
 -- | Draws the tape box
-drawTape :: MachineState -> Widget Name
-drawTape m =
+drawTape :: MachineState -> Bool -> Widget Name
+drawTape m blinking =
   box 63 8 "Tape" $ vBox
-    [ padBottom (Pad 1) $ str tapeString
-    ,  str leftSpaces <+> str "∆"
+    [ padBottom (Pad 1)
+    $ normalTape leftStrings <+> str " " <+> currentVal current <+> str " " <+> normalTape rightStrings
+    ,  cursor "∆"
     ]
   where
-    fixedList = toFixedList 15 $ tape m
-    tapeString = unwords . map pretty $ fixedList
-    halfTapeString = length . unwords . map pretty . take 15 $ fixedList
-    leftSpaces = replicate (halfTapeString + 1) ' '
+    normalTape = str . unwords
+    currentVal = (if blinking then withAttr blinkAttr else id) . str
+    cursor c = str (replicate halfTapeString  ' ') <+> str c
+
+    fixedList = map pretty . toFixedList 15 $ tape m
+    (leftStrings, current:rightStrings) = splitAt 15 fixedList
+    halfTapeString = length (unwords leftStrings) + 1
 
 -- | Draws the current state box
 drawCurrent :: MachineState -> Widget Name
@@ -177,7 +187,7 @@ drawPrevious = statusBox "Previous" . machineState . drawPrevious' . history
     drawPrevious' []    = [Just "-", Just "-", Nothing]
     drawPrevious' (h:_) =
       [ Just . pretty . state . machine $ h
-      , Just . pretty . state . machine $ h
+      , Just . pretty . symbol . machine $ h
       , Nothing
       ]
 
@@ -218,8 +228,10 @@ box width height title content =
 -- | The attributes map, that defines styles
 attributes :: AttrMap
 attributes = attrMap V.defAttr
-  [ (errorAttr, fg V.red)
+  [ (errorAttr, fg V.red `V.withStyle` V.bold)
   , (finishedAttr, fg V.blue `V.withStyle` V.bold)
+  , (titleAttr, fg V.white `V.withStyle` V.bold)
+  , (blinkAttr, fg V.white `V.withStyle` V.blink)
   ]
 
 errorAttr :: AttrName
@@ -227,3 +239,9 @@ errorAttr = "errorAttr"
 
 finishedAttr :: AttrName
 finishedAttr = "finishedAttr"
+
+titleAttr :: AttrName
+titleAttr = "titleAttr"
+
+blinkAttr :: AttrName
+blinkAttr = "blinkAttr"
