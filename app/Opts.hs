@@ -10,7 +10,7 @@ import           Instruction           (Instruction (TapeValue),
 import           System.Environment    (getArgs)
 import           System.Exit           (exitFailure, exitSuccess)
 import           System.IO             (hPutStrLn, stderr)
-import           Tape                  (Tape, fromList)
+import           Tape                  (Symbol (..), Tape, fromList)
 
 ------------------------------------------------
 -- Data types
@@ -44,7 +44,7 @@ defaultOpts :: Options
 defaultOpts = Options
   { input = getContents
   , output = putStrLn
-  , tape = Nothing
+  , tape = Just . fromList . map Symbol $ ["h", "e", "l", "l", "o", "#", "w", "o", "r", "l", "d"]
   , interactive = False
   }
 
