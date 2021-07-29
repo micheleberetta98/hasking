@@ -3,7 +3,6 @@
 module UI
   ( runUiWith
   , Status
-  , Tick(Tick)
   ) where
 
 import           Brick                      hiding (Direction)
@@ -30,7 +29,7 @@ data Status = Status
   , invalidStateMsg :: Maybe String
   , isFinal         :: Bool
   }
-data Tick = Tick
+type CustomEvent = ()
 type Name = ()
 
 ------------------------------------------------
@@ -51,7 +50,7 @@ runUiWith code = defaultMain app $
     }
 
 -- | The app definition
-app :: App Status Tick Name
+app :: App Status CustomEvent Name
 app = App
   { appDraw = drawUI
   , appChooseCursor = neverShowCursor
@@ -65,7 +64,7 @@ app = App
 ------------------------------------------------
 
 -- | Handles a generic event
-handleEvent :: Status -> BrickEvent Name Tick -> EventM Name (Next Status)
+handleEvent :: Status -> BrickEvent Name CustomEvent -> EventM Name (Next Status)
 handleEvent m (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue $ executeStep m
 handleEvent m (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue $ goBack m
 handleEvent m (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt m
