@@ -67,9 +67,21 @@ instructionTests = describe "Instruction" $ do
       Right t2 = parseInstruction "{a b c}"
       Right t3 = parseInstruction "{  s   }"
       Right t4 = parseInstruction "{0 0 . 0 0}"
+      Right t5 = parseInstruction "{# ! - . =}"
 
     pretty t1 `shouldBe` "{0 0 2}"
     pretty t2 `shouldBe` "{a b c}"
     pretty t3 `shouldBe` "{s}"
     pretty t4 `shouldBe` "{0 0 . 0 0}"
+    pretty t5 `shouldBe` "{# ! - . =}"
+
+  it "should not parse wrong tapes" $ do
+    let
+      Left i1 = parseInstruction "{()}"
+      Left i2 = parseInstruction "{[]}"
+      Left i3 = parseInstruction "{;}"
+
+    pretty i1 `shouldNotBe` ""
+    pretty i2 `shouldNotBe` ""
+    pretty i3 `shouldNotBe` ""
 
