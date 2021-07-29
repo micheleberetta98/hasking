@@ -128,7 +128,7 @@ goBack status = goBack' $ history status
 drawUI :: Status -> [Widget Name]
 drawUI status =
   [ C.center $ drawTitle (processingState status)
-  <=> drawTape m
+  <=> drawTape m (processingState status == Processing)
   <=> (drawPrevious status <+> drawCurrent m <+> drawNext m)
   <=> drawInstructions
   ]
@@ -148,17 +148,21 @@ drawTitle = filled . drawTitle'
     drawTitle' Processing  = withAttr titleAttr $ str "Hasking Simulator"
 
 -- | Draws the tape box
-drawTape :: MachineState -> Widget Name
-drawTape m =
+drawTape :: MachineState -> Bool -> Widget Name
+drawTape m blinking =
   box 63 8 "Tape" $ vBox
-    [ padBottom (Pad 1) $ str tapeString
-    ,  str leftSpaces <+> str "∆"
+    [ padBottom (Pad 1)
+    $ normalTape leftStrings <+> str " " <+> currentVal current <+> str " " <+> normalTape rightStrings
+    ,  cursor "∆"
     ]
   where
-    fixedList = toFixedList 15 $ tape m
-    tapeString = unwords . map pretty $ fixedList
-    halfTapeString = length . unwords . map pretty . take 15 $ fixedList
-    leftSpaces = replicate (halfTapeString + 1) ' '
+    normalTape = str . unwords
+    currentVal = (if blinking then withAttr blinkAttr else id) . str
+    cursor c = str (replicate halfTapeString  ' ') <+> str c
+
+    fixedList = map pretty . toFixedList 15 $ tape m
+    (leftStrings, current:rightStrings) = splitAt 15 fixedList
+    halfTapeString = length (unwords leftStrings) + 1
 
 -- | Draws the current state box
 drawCurrent :: MachineState -> Widget Name
@@ -227,6 +231,7 @@ attributes = attrMap V.defAttr
   [ (errorAttr, fg V.red `V.withStyle` V.bold)
   , (finishedAttr, fg V.blue `V.withStyle` V.bold)
   , (titleAttr, fg V.white `V.withStyle` V.bold)
+  , (blinkAttr, fg V.white `V.withStyle` V.blink)
   ]
 
 errorAttr :: AttrName
@@ -237,3 +242,6 @@ finishedAttr = "finishedAttr"
 
 titleAttr :: AttrName
 titleAttr = "titleAttr"
+
+blinkAttr :: AttrName
+blinkAttr = "blinkAttr"
