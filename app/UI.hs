@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module UI
   ( runUiWith
   , Status
@@ -8,12 +10,11 @@ import           Brick                      hiding (Direction)
 import qualified Brick.Widgets.Border       as B
 import qualified Brick.Widgets.Border.Style as BS
 import qualified Brick.Widgets.Center       as C
--- import           Data.Sequence              (Seq)
--- import qualified Data.Sequence              as S
-import           Code
+import           Code                       (MachineCode (finalStates, initialState, initialTape, transitions))
 import qualified Graphics.Vty               as V
 import           Pretty                     (Pretty (pretty))
-import           Tape
+import           Tape                       (Symbol, Tape (..), move,
+                                             toFixedList, write)
 import           TuringMachine              (From, State, To, runTransition)
 
 ------------------------------------------------
@@ -21,13 +22,13 @@ import           TuringMachine              (From, State, To, runTransition)
 ------------------------------------------------
 
 data Status = Status
-  { machine       :: MachineCode
-  , history       :: [Status]
-  , currentState  :: State String
-  , currentSymbol :: Symbol String
-  , tape          :: Tape String
-  , errorMessage  :: Maybe String
-  , isFinal       :: Bool
+  { machine         :: MachineCode
+  , history         :: [Status]
+  , currentState    :: State String
+  , currentSymbol   :: Symbol String
+  , tape            :: Tape String
+  , invalidStateMsg :: Maybe String
+  , isFinal         :: Bool
   }
 data Tick = Tick
 type Name = ()
@@ -45,7 +46,7 @@ runUiWith code = defaultMain app $
     , currentState = initialState code
     , currentSymbol = value (initialTape code)
     , tape = initialTape code
-    , errorMessage = Nothing
+    , invalidStateMsg = Nothing
     , isFinal = False
     }
 
@@ -56,7 +57,7 @@ app = App
   , appChooseCursor = neverShowCursor
   , appHandleEvent = handleEvent
   , appStartEvent = return
-  , appAttrMap = const (attrMap V.defAttr [])
+  , appAttrMap = const attributes
   }
 
 ------------------------------------------------
@@ -80,7 +81,7 @@ executeStep s = updateStatus s (transition s)
 -- | Executes a single machine, setting the error if necessary and checking if
 -- the machine has reached a final state
 updateStatus :: Status -> Either (From String String) (To String String) -> Status
-updateStatus status (Left _) = status{ errorMessage = Just "Invalid state reached" }
+updateStatus status (Left _) = status{ invalidStateMsg = Just "Invalid state reached" }
 updateStatus status (Right (s', out, dir)) =
   let t = move dir $ write out $ tape status
       fs = finalStates (machine status)
@@ -95,7 +96,11 @@ updateStatus status (Right (s', out, dir)) =
 
 -- | Runs a single transition on @Status@
 transition :: Status -> Either (From String String) (To String String)
-transition (Status m _ state symbol _ _ _) = runTransition (transitions m) (state, symbol)
+transition status = runTransition ts (state, symbol)
+  where
+    ts = transitions $ machine status
+    state = currentState status
+    symbol = currentSymbol status
 
 goBack :: Status -> Status
 goBack status = goBack' $ history status
@@ -111,45 +116,44 @@ goBack status = goBack' $ history status
 drawUI :: Status -> [Widget Name]
 drawUI status =
   [ drawTitle status
-  <=> drawTape status
-  <=> (drawCurrent status <+> drawNext status <+> drawPrevious status)
+  <=> drawTape (tape status)
+  <=> (drawPrevious status <+> drawCurrent status <+> drawNext status)
   <=> drawInstructions
   ]
 
 -- | Draws the title, displaying the error message (if there's any) or if the
 -- computation has terminated
 drawTitle :: Status -> Widget n
-drawTitle status = drawTitle' (errorMessage status) (isFinal status)
+drawTitle status = drawTitle' (invalidStateMsg status) (isFinal status)
   where
-    drawTitle' (Just msg) _ = str $ " !!! " ++ msg ++ " !!! "
-    drawTitle' _ True       = str " === You reached the end! ==="
-    drawTitle' _ _          = str "~ ~ ~ The Hasking Simulator ~ ~ ~"
+    drawTitle' (Just msg) _ = withAttr errorAttr $ str (" !!! " ++ msg ++ " !!! ")
+    drawTitle' _ True       = withAttr finishedAttr $ str " === You reached the end! ==="
+    drawTitle' _ _          = str " ~~~ The Hasking Simulator ~~~"
 
 -- | Draws the tape box
-drawTape :: Status -> Widget Name
-drawTape status =
-  box totalWidth 8 "Tape" $ vBox
+drawTape :: Tape String -> Widget Name
+drawTape t =
+  box 63 8 "Tape" $ vBox
     [ padBottom (Pad 1) $ str tapeString
     , str (leftSpaces ++ "∆")
     ]
   where
-    fixedList = toFixedList 15 (tape status)
+    fixedList = toFixedList 15 t
     tapeString = unwords . map pretty $ fixedList
     halfTapeString = length . unwords . map pretty . take 15 $ fixedList
     leftSpaces = replicate (halfTapeString + 1) ' '
-    totalWidth = length tapeString + 2
 
 -- | Draws the current state box
 drawCurrent :: Status -> Widget Name
-drawCurrent status = statusBox "Current"
-    ( pretty (currentState status)
-    , pretty (currentSymbol status)
+drawCurrent status = statusBox "Current" $ statusContent
+    [ Just $ pretty (currentState status)
+    , Just $ pretty (currentSymbol status)
     , Nothing
-    )
+    ]
 
 -- | Draws the next state box
 drawNext :: Status -> Widget Name
-drawNext status = statusBox "Next" (s, written, Just dir)
+drawNext status = statusBox "Next" . statusContent $ map Just [s, written, dir]
   where
     (s, written, dir) = case transition status of
       Right (s', out, d) -> (pretty s', pretty out, pretty d)
@@ -157,10 +161,14 @@ drawNext status = statusBox "Next" (s, written, Just dir)
 
 -- | Draws the previous state box
 drawPrevious :: Status -> Widget Name
-drawPrevious = statusBox "Previous" . drawPrevious' . history
+drawPrevious = statusBox "Previous" . statusContent . drawPrevious' . history
   where
-    drawPrevious' []    = ("-", "-", Nothing)
-    drawPrevious' (h:_) = (pretty $ currentState h, pretty $ currentSymbol h, Nothing)
+    drawPrevious' []    = [Just "-", Just "-", Nothing]
+    drawPrevious' (h:_) =
+      [ Just . pretty $ currentState h
+      , Just . pretty $ currentSymbol h
+      , Nothing
+      ]
 
 -- | Draws the instructions box
 drawInstructions :: Widget Name
@@ -171,17 +179,16 @@ drawInstructions = box 63 9 "Instructions" $ vBox
   ]
 
 -- | A generic box for a status
-statusBox :: String -> (String, String, Maybe String) -> Widget Name
-statusBox title (state, written, dir) =
-  box 21 9 title $ vBox
-    [ str ("State:  " ++ state)
-    , str ("Symbol: " ++ written)
-    , str lastString
-    ]
+statusBox :: String -> [Widget Name] -> Widget Name
+statusBox title content = box 21 9 title $ vBox content
+
+-- | It generates a list of @Widget Name@ that can be put into a @statusBox@,
+-- showing @"State"@, @"Symbol"@ and @"Direction"@
+statusContent :: [Maybe String] -> [Widget Name]
+statusContent = map str . zipWith formatStr ["State:  ", "Symbol: ", "Dir:    "]
   where
-    lastString = case dir of
-      Nothing -> " "
-      Just d  -> "Dir:    " ++ d
+    formatStr _ Nothing    = " "
+    formatStr s1 (Just s2) = s1 ++ s2
 
 -- | A generic box
 box :: Int -> Int -> String -> Widget Name -> Widget Name
@@ -192,3 +199,20 @@ box width height title content =
     $ C.hCenter
     $ padAll 1 content
     ]
+
+------------------------------------------------
+-- Attributes
+------------------------------------------------
+
+-- | The attributes map, that defines styles
+attributes :: AttrMap
+attributes = attrMap V.defAttr
+  [ (errorAttr, fg V.red)
+  , (finishedAttr, fg V.blue `V.withStyle` V.bold)
+  ]
+
+errorAttr :: AttrName
+errorAttr = "errorAttr"
+
+finishedAttr :: AttrName
+finishedAttr = "finishedAttr"
