@@ -4,16 +4,16 @@ A very very simple Turing Machine simulator and interpreter written in Haskell.
 
 ## Compile and run
 
-You will need [Stack](https://www.haskellstack.org/) to compile this project.
+You will need [Stack](https://www.haskellstack.org/) to compile this project, and then you can just do the following
 
-You can get started by doing
 ```
 git clone http://github.com/micheleberetta98/hasking
 cd hasking
 stack setup
 stack build
-stack run example.txt
 ```
+
+Use `stack run -- [options]` to run the project.
 
 There are some tests that you can execute with `stack test`.
 
@@ -21,16 +21,17 @@ There are some tests that you can execute with `stack test`.
 
 The options are as follow
 ```
-hasking [-i FILE] [-o FILE] [-t TAPE] [-v] [-h]
+hasking [-i] [-s FILE] [-o FILE] [-t TAPE] [-v] [-h]
 ```
 
-| Short | Long        | Meaning                            |
-| ----- | ----------- | ---------------------------------- |
-| `-v`  | `--version` | Prints the version                 |
-| `-h`  | `--help`    | Prints the help page               |
-| `-i`  | `--input`   | The input file (default `stdin`)   |
-| `-o`  | `--output`  | The output file (default `stdout`) |
-| `-t`  | `--tape`    | The initial tape to use            |
+| Short | Long            | Meaning                                                 |
+| ----- | --------------- | ------------------------------------------------------- |
+| `-v`  | `--version`     | Prints the version                                      |
+| `-h`  | `--help`        | Prints the help page                                    |
+| `-s`  | `--script`      | The file containing the instructions (default `stdin`)  |
+| `-o`  | `--output`      | The output file (default `stdout`)                      |
+| `-t`  | `--tape`        | The initial tape to use                                 |
+| `-i`  | `--interactive` | Run in interactive mode (terminal must support Unicode) |
 
 The initial tape will overwrite any tape definitions in your file.
 If you provide no initial tape using the `-t` option, its value will be searched in the input file.
