@@ -39,7 +39,6 @@ If you provide no initial tape using the `-t` option, its value will be searched
 ## The language
 
 The file you pass to the machine contains the machine definition. There are some rules:
-* Each line is one instruction
 * The input and machine alphabet are comprised of ***symbols***, which can be letters, numbers or any characters but one of `; ()[]{}`, and the special *blank symbol* is identified by `.` (dot)
 * The ***state*** of the machine is a series of alphanumeric characters that starts with a letter
 * The ***direction*** is one of `L`, `R` or `S` (left, right or stay)
@@ -49,6 +48,22 @@ The file you pass to the machine contains the machine definition. There are some
 Given these, there are only 3 types of lines: state transitions, control instructions and the initial tape value.
 
 You can see a complete example in `example.txt`.
+
+The structure is as follows:
+```
+(machine
+  (initial <state>)
+  (finals (<state> <state> ...))
+  (rules (
+    (<state> <symbol> <state> <symbol> <direction>)
+    ...
+  ))
+)
+
+(simulate-on (<symbol> ...))
+(simulate-on (<symbol> ...))
+...
+```
 
 ### State transitions
 
@@ -61,23 +76,12 @@ For example, `(s 1 q 0 R)` means
 * If the machine is in the state `s` and is reading `1` off the tape
 * Go to state `q`, write `0` onto the tape and then move `R`ight
 
-### Control instructions
+### Simulations
 
-These are used to specify options about the machine. They are written as
-```
-[<command name> <state> <state> ...]
-```
+You can add multiple (or no) tapes on which to simulate the machine.
+The instruction is `simulate-on` and *must follow the definition*.
 
-Right now, only two are supported
-* `[BEGIN s]`, to specify the *one and only* initial state
-* `[FINAL s r ... ]` to specify at least one final state
-
-### Initial tape value
-
-This is simply a list of symbols wrapped in curly brackets
-```
-{<symbol> <symbol> ...}
-```
+### Tapes
 
 The initial tape has to
 * Contain *at least* one symbol
