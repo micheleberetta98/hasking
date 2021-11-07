@@ -56,9 +56,7 @@ The structure is as follows:
   (finals (<state> <state> ...))
   (rules (
     (<state> <symbol> <state> <symbol> <direction>)
-    ...
-  ))
-)
+    ...)))
 
 (simulate-on (<symbol> ...))
 (simulate-on (<symbol> ...))
