@@ -3,9 +3,10 @@ module Main (main) where
 import           Code
 import           Control.Monad
 import           Data.List
-import           Data.Text       (Text, pack)
+import           Data.Text       (Text)
+import qualified Data.Text       as T
 import           Data.Void
-import           Opts            (Options (Options), getOpts)
+import           Opts
 import           Parser
 import           Pretty
 import           System.Exit
@@ -32,7 +33,7 @@ executeUI Nothing = const $ do
 executeUI (Just t) = void . runUiWith . withTape t . fromCode
 
 executeMachine :: Code -> Text
-executeMachine code = pack . intercalate "\n" . map (format . machine tm . getSimulationTape) . simulations $ code
+executeMachine code = T.pack . intercalate "\n" . map (format . machine tm . getSimulationTape) . simulations $ code
   where
     tm = fromCode code
     format (Left (state, symbol)) = concat ["(!) Invalid state reached: (", pretty state, ", ", pretty symbol, ")"]

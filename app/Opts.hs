@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Opts (Options(..), getOpts) where
+module Opts (Options(Options), getOpts) where
 
 import           System.Console.GetOpt (ArgDescr (NoArg, ReqArg),
                                         ArgOrder (RequireOrder), OptDescr (..),
