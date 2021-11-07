@@ -23,7 +23,8 @@ dependencies:
 - containers
 - brick
 - vty
-- parsec
+- megaparsec
+- text
 
 library:
   source-dirs: src

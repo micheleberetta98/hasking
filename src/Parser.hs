@@ -1,15 +1,21 @@
-module Parser (parseCode) where
+{-# LANGUAGE OverloadedStrings #-}
 
+module Parser (Parser, parseCode, parseTape) where
 
-import           Code               (Code (..), Definition (Definition),
-                                     Rule (..), Simulate (..), State (State))
-import           Data.Bifunctor     (Bifunctor (first))
-import           Data.Char          (isAlpha, isAlphaNum, isSpace)
-import           Data.Functor       (($>))
-import           Tape               (Direction (L, R, S), Symbol (..), Tape,
-                                     fromList)
-import           Text.Parsec        hiding (State)
-import           Text.Parsec.String (Parser)
+import           Code
+import           Data.Char
+import           Data.Text                  (Text)
+import           Data.Void
+import           Tape                       hiding (empty)
+import           Text.Megaparsec            hiding (State)
+import           Text.Megaparsec.Char
+import qualified Text.Megaparsec.Char.Lexer as L
+
+-----------------------------------------------
+-- Types
+-----------------------------------------------
+
+type Parser = Parsec Void Text
 
 -----------------------------------------------
 -- Interface
@@ -17,75 +23,83 @@ import           Text.Parsec.String (Parser)
 
 -- | Parses the whole code
 parseCode :: Parser Code
-parseCode = Code
-  <$> parseDefinition <* many space
-  <*> spaced parseSimulate
+parseCode = sc *> (mkCode <$> lexeme parseDefinition <*> many (lexeme parseSimulate))
 
 -- | Parses the actual machine definition
 parseDefinition :: Parser Definition
-parseDefinition = parens $ string "machine" *> many1 space *> definition
+parseDefinition = parens $ symbol "machine" *> definition
   where
-    definition = Definition
-      <$> (initialState <* many space)
-      <*> (finalStates <* many space)
+    definition = mkDefinition
+      <$> lexeme initialState
+      <*> lexeme finalStates
       <*> rulesList
 
-    initialState = parens $ string "initial" *> many1 space *> parseState
-    finalStates = parens $ string "finals" *> many1 space *> parens (spaced parseState)
-
-rulesList :: Parser [Rule]
-rulesList = parens $ string "rules" *> many1 space *> parens (spaced parseRule)
+    initialState = parens $ symbol "initial" *> parseState
+    finalStates = parens $ symbol "finals" *> parens (spaced parseState)
+    rulesList = parens $ symbol "rules" *> parens (spaced parseRule)
 
 -- | Parses a single "rule" in the form @(state symbol state symbol direction)@
 parseRule :: Parser Rule
-parseRule = parens $ Rule
-  <$> (parseState <* many1 space)
-  <*> (parseSymbol <* many1 space)
-  <*> (parseState <* many1 space)
-  <*> (parseSymbol <* many1 space)
+parseRule = parens $ mkRule
+  <$> (parseState <* sc)
+  <*> (parseSymbol <* sc)
+  <*> (parseState <* sc)
+  <*> (parseSymbol <* sc)
   <*> parseDirection
 
 -- | Parses a @simulate-on@ definition
-parseSimulate :: Parser Simulate
-parseSimulate = Simulate <$> parens (string "simulate-on" *> many1 space *> parseTape)
+parseSimulate :: Parser Simulation
+parseSimulate = mkSimulation <$> parens (symbol "simulate-on" *> parseTape)
 
 -- | Parses a state value
-parseState :: Parser (State String)
-parseState = State <$> identifier
+parseState :: Parser State
+parseState = mkState <$> identifier <?> "state"
   where
     identifier = (:) <$> satisfy isAlpha <*> many (satisfy isAlphaNum)
 
 -- | Parses a tape
 parseTape :: Parser (Tape String)
-parseTape = Tape.fromList <$> parens (spaced parseSymbol)
+parseTape = Tape.fromList <$> parens (spaced parseSymbol) <?> "tape (symbols' list)"
 
 -- | Parses a symbol
 parseSymbol :: Parser (Symbol String)
-parseSymbol = blank <|> value
+parseSymbol = (blank <|> value) <?> "symbol"
   where
-    blank = string "." $> Blank
-    value = Symbol <$> many1 (alphaNum <|> noneOf " ()[]{};")
+    blank = Blank <$ string "."
+    value = Symbol <$> some (noneOf [' ', '(', ')', '[', ']', '{', '}', ';'])
 
 -- | Parses a @Direction@
 parseDirection :: Parser Direction
 parseDirection = choice
-  [ char 'R' $> R
-  , char 'L' $> L
-  , char 'S' $> S
-  ]
+  [ R <$ symbol "R"
+  , L <$ symbol "L"
+  , S <$ symbol "S"
+  ] <?> "direction"
 
 -----------------------------------------------
 -- Utilities
 -----------------------------------------------
 
+-- | Wrapper for symbols, picks up all trailing white space
+symbol :: Text -> Parser Text
+symbol = L.symbol sc
+
+-- | Wrapper for lexems, picks up all trailing white space
+lexeme :: Parser a -> Parser a
+lexeme = L.lexeme sc
+
+-- | A space consumer, ignores comments (beginning with @;@)
+sc :: Parser ()
+sc = L.space space1 (L.skipLineComment ";") empty
+
 -- | Wraps the parser @p@ in parentheses
 parens :: Parser a -> Parser a
-parens = between (string "(" <* many space) (many space *> string ")")
+parens = between (symbol "(" ) (sc *> string ")")
 
 -- | Parses zero or more instances of @p@ separated (end eventually ended) by space
 spaced :: Parser a -> Parser [a]
-spaced p = p `sepEndBy` many space
+spaced = many . lexeme
 
 -- | Parses one or more instances of @p@ separated (end eventually ended) by space
 spaced1 :: Parser a -> Parser [a]
-spaced1 p = p `sepEndBy1` many space
+spaced1 = some . lexeme

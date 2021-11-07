@@ -25,7 +25,10 @@ data Tape a = Cell
   { value :: Symbol a
   , left  :: Tape a
   , right :: Tape a }
-  deriving (Show, Eq)
+  deriving (Eq)
+
+instance (Show a, Pretty a) => Show (Tape a) where
+  show = pretty
 
 -- | Represents movement (@L@ = left, @R@ = right, @S@ = stay)
 data Direction = L | R | S deriving (Show, Eq)

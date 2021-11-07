@@ -1,16 +1,21 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Opts (Options(..), getOpts) where
 
 import           System.Console.GetOpt (ArgDescr (NoArg, ReqArg),
                                         ArgOrder (RequireOrder), OptDescr (..),
                                         getOpt, usageInfo)
 
-import           Data.List             (foldl', isPrefixOf)
-import           Instruction           (Instruction (TapeValue),
-                                        parseInstruction)
-import           System.Environment    (getArgs)
-import           System.Exit           (exitFailure, exitSuccess)
-import           System.IO             (hPutStrLn, stderr)
-import           Tape                  (Symbol (..), Tape, fromList)
+import           Data.List
+import           Data.Text             (Text)
+import qualified Data.Text             as T
+import qualified Data.Text.IO          as TIO
+import           Parser
+import           System.Environment
+import           System.Exit
+import           System.IO
+import           Tape
+import           Text.Megaparsec
 
 ------------------------------------------------
 -- Data types
@@ -18,8 +23,8 @@ import           Tape                  (Symbol (..), Tape, fromList)
 
 -- | The command line options
 data Options = Options
-  { input       :: IO String
-  , output      :: String -> IO ()
+  { input       :: IO Text
+  , output      :: Text -> IO ()
   , tape        :: Maybe (Tape String)
   , interactive :: Bool
   }
@@ -42,9 +47,9 @@ getOpts = do
 -- | The default options
 defaultOpts :: Options
 defaultOpts = Options
-  { input = getContents
-  , output = putStrLn
-  , tape = Just . fromList . map Symbol $ ["h", "e", "l", "l", "o", "#", "w", "o", "r", "l", "d"]
+  { input = TIO.getContents
+  , output = TIO.putStrLn
+  , tape = Nothing
   , interactive = False
   }
 
@@ -73,24 +78,22 @@ options =
 
 -- | Sets the input option
 withInput :: Monad m => FilePath -> Options -> m Options
-withInput arg opts = return opts{ input = readFile arg }
+withInput arg opts = return opts{ input = TIO.readFile arg }
 
 -- | Sets the output option
 withOutput :: Monad m => FilePath -> Options -> m Options
-withOutput arg opts = return opts{ output = writeFile arg }
+withOutput arg opts = return opts{ output = TIO.writeFile arg }
 
 -- | Sets the initial tape option
 withTape :: String -> Options -> IO Options
 withTape arg opts =
-  case parseInstruction (format arg) of
-    Right (TapeValue t) -> return opts{ tape = Just $ fromList t }
+  case parse parseTape "" formattedArg of
+    Right t -> return opts{ tape = Just t }
     _ -> do
       hPutStrLn stderr "Invalid tape provided"
       exitFailure
-    where
-      format t
-        | "{" `isPrefixOf` t = t
-        | otherwise          = "{" ++ t ++ "}"
+  where
+    formattedArg = T.concat ["(", T.pack arg, ")"]
 
 withInteractiveModeOn :: Monad m => Options -> m Options
 withInteractiveModeOn opts = return opts{ interactive = True }
