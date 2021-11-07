@@ -1,10 +1,9 @@
 module Main (main) where
 
--- import           Code          (MachineCode (MachineCode), fromCode)
--- import           Control.Monad (void)
--- import           Opts          (Options (Options), getOpts)
+import           Opts        (Options (Options), getOpts)
+import           Parser
+import           Text.Parsec
 -- import           Pretty        (Pretty (..))
--- import           System.Exit   (exitFailure)
 -- import           System.IO     (hPutStrLn, stderr)
 -- import           Tape          (Symbol, Tape)
 -- import           TuringMachine (State, machine)
@@ -13,13 +12,10 @@ module Main (main) where
 
 main :: IO ()
 main = do
-  putStrLn "Hello World"
-  -- opts <- getOpts
-  -- let (Options input output tape interactive) = opts
-  -- m <- input >>= getMachine . addTape tape
-  -- if interactive
-  --   then void (runUiWith m)
-  --   else runMachine m >>= output
+  opts <- getOpts
+  let (Options input _ _ _) = opts
+  content <- input
+  print $ parse parseCode "" content
 
 -- getMachine :: String -> IO MachineCode
 -- getMachine code =

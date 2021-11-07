@@ -23,6 +23,7 @@ dependencies:
 - containers
 - brick
 - vty
+- parsec
 
 library:
   source-dirs: src
