@@ -30,7 +30,7 @@ hasking [-i] [-s FILE] [-o FILE] [-t TAPE] [-v] [-h]
 | `-h`  | `--help`        | Prints the help page                                    |
 | `-s`  | `--script`      | The file containing the instructions (default `stdin`)  |
 | `-o`  | `--output`      | The output file (default `stdout`)                      |
-| `-t`  | `--tape`        | The initial tape to use                                 |
+| `-t`  | `--tape`        | The initial tape to use (required if `-i` is used)      |
 | `-i`  | `--interactive` | Run in interactive mode (terminal must support Unicode) |
 
 The initial tape will overwrite any tape definitions in your file.
