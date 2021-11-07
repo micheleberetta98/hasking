@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0ca37eedecab2b7da2dbc63075d594af3d69663421b847a0684ed6fd5889e9d7
+-- hash: ce950bffc55aa48cf31afc880ed27ee66da1b2a7a33c5cbdcd4981dbe9b4d232
 
 name:           hasking
 version:        2.1.0
@@ -31,6 +31,7 @@ library
       Pretty
       Tape
       TuringMachine
+      UI
   other-modules:
       Paths_hasking
   hs-source-dirs:

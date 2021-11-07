@@ -10,6 +10,3 @@
     (x . q . R)     ; you get back to the beginning
   ))
 )
-
-(simulate-on (0 0 0 0))
-(simulate-on (1 1 0 0))

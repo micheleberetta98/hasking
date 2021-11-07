@@ -5,7 +5,10 @@ module TuringMachine
   , To
   , machine
   , step
+  , transition
+  , currentFrom
   , fromCode
+  , withTape
   )
 where
 
@@ -75,21 +78,22 @@ machine tm tape = machine' $ withTape tape tm
 step :: (Ord s, Ord a) => TuringMachine s a -> Either (From s a) (TuringMachine s a)
 step tm@(TuringMachine _ _ _ _ Stopped _)     = Right tm
 step tm@(TuringMachine _ fs ts cur _ tape) =
-  let from = (cur, value tape) in
-  case ts !? from of
+  let from = currentFrom tm in
+  case transition from ts of
     Nothing              -> Left from
     Just (st', out, dir) -> Right tm
                                   { current = st'
-                                  , tape = updateTape dir  out tape
+                                  , tape = updateTape dir out tape
                                   , status = if st' `elem` fs then Stopped else Running
                                   }
 
+-- | Lookups a single transition from a @Transitions s a@
+transition :: (Ord s, Ord a) => From s a -> Transitions s a -> Maybe (To s a)
+transition from ts = ts !? from
 
--- step :: (Ord s, Ord a) => Transitions s a -> From s a -> Either (From s a) (To s a)
--- step transitions from =
---   case transitions !? from of
---     Just to -> Right to
---     Nothing -> Left from
+-- | Gives the current @State s@ and @Symbol a@
+currentFrom :: TuringMachine s a -> From s a
+currentFrom m = (current m, value $ tape m)
 
 -- | Converts a @Code@ into a @TuringMachine String String@
 fromCode :: Code -> TuringMachine String String
