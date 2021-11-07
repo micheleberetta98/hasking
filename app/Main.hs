@@ -1,28 +1,29 @@
 module Main (main) where
 
 import           Code
-import           Data.Text       (Text)
+import           Data.List
+import           Data.Text       (Text, pack)
 import           Data.Void
 import           Opts            (Options (Options), getOpts)
 import           Parser
 import           Pretty
 import           System.Exit
 import           System.IO
+import           Tape
 import           Text.Megaparsec hiding (empty)
 import           TuringMachine
-import Tape
 
 main :: IO ()
 main = do
   opts <- getOpts
-  let (Options input _ t _) = opts
+  let (Options input output t _) = opts
   content <- input
   case getCode t content of
     Left errors -> do
       hPutStrLn stderr (errorBundlePretty errors)
       exitFailure
     Right code -> do
-      mapM_ putStrLn (executeMachine code)
+      output . pack . intercalate "\n" $ executeMachine code
 
 executeMachine :: Code -> [String]
 executeMachine code = map (format . machine tm) tapes
