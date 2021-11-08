@@ -23,7 +23,7 @@ type Parser = Parsec Void Text
 
 -- | Parses the whole code
 parseCode :: Parser Code
-parseCode = sc *> (mkCode <$> lexeme parseDefinition <*> many (lexeme parseSimulate))
+parseCode = sc *> (mkCode <$> lexeme parseDefinition <*> many' parseSimulate)
 
 -- | Parses the actual machine definition
 parseDefinition :: Parser Definition
@@ -35,8 +35,8 @@ parseDefinition = parens $ symbol "machine" *> definition
       <*> rulesList
 
     initialState = parens $ symbol "initial" *> parseState
-    finalStates = parens $ symbol "finals" *> parens (spaced parseState)
-    rulesList = parens $ symbol "rules" *> parens (spaced parseRule)
+    finalStates = parens $ symbol "finals" *> parens (many' parseState)
+    rulesList = parens $ symbol "rules" *> parens (many' parseRule)
 
 -- | Parses a single "rule" in the form @(state symbol state symbol direction)@
 parseRule :: Parser Rule
@@ -59,14 +59,14 @@ parseState = mkState <$> identifier <?> "state"
 
 -- | Parses a tape
 parseTape :: Parser (Tape String)
-parseTape = Tape.fromList <$> parens (spaced parseSymbol) <?> "tape (symbols' list)"
+parseTape = Tape.fromList <$> parens (many' parseSymbol) <?> "tape (symbols' list)"
 
 -- | Parses a symbol
 parseSymbol :: Parser (Symbol String)
-parseSymbol = (blank <|> value) <?> "symbol"
+parseSymbol = (blank <|> symbolValue) <?> "symbol"
   where
     blank = Blank <$ string "."
-    value = Symbol <$> some (noneOf [' ', '(', ')', '[', ']', '{', '}', ';'])
+    symbolValue = Symbol <$> some (noneOf [' ', '(', ')', '[', ']', '{', '}', ';'])
 
 -- | Parses a @Direction@
 parseDirection :: Parser Direction
@@ -92,14 +92,10 @@ lexeme = L.lexeme sc
 sc :: Parser ()
 sc = L.space space1 (L.skipLineComment ";") empty
 
+-- | Parses @many@ of a certain @lexeme@
+many' :: Parser a -> Parser [a]
+many' = many . lexeme
+
 -- | Wraps the parser @p@ in parentheses
 parens :: Parser a -> Parser a
 parens = between (symbol "(" ) (sc *> string ")")
-
--- | Parses zero or more instances of @p@ separated (end eventually ended) by space
-spaced :: Parser a -> Parser [a]
-spaced = many . lexeme
-
--- | Parses one or more instances of @p@ separated (end eventually ended) by space
-spaced1 :: Parser a -> Parser [a]
-spaced1 = some . lexeme

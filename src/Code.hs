@@ -1,5 +1,5 @@
 module Code
-  ( Code(definition, simulations)
+  ( Code
   , Definition
   , State
   , Rule
@@ -11,6 +11,7 @@ module Code
   , mkRule
   , addSimulation
   , getDefinitions
+  , getSimulations
   , getRuleFrom
   , getRuleTo
   )
@@ -22,7 +23,10 @@ import           Tape
 -- Types
 -----------------------------------------------
 
-data Code = Code { definition :: Definition, simulations :: [Simulation]} deriving (Show)
+data Code = Code
+  { definition  :: Definition
+  , simulations :: [Simulation]
+  } deriving (Show)
 
 newtype Simulation = Simulation { getSimulationTape :: Tape String } deriving (Show)
 
@@ -65,8 +69,11 @@ mkSimulation = Simulation
 addSimulation :: Tape String -> Code -> Code
 addSimulation t (Code def sims) = Code def (mkSimulation t : sims)
 
-getDefinitions :: Definition -> (String, [String], [Rule])
-getDefinitions (Definition initial finals rules) = (getState initial, map getState finals, rules)
+getDefinitions :: Code -> (String, [String], [Rule])
+getDefinitions (Code (Definition initial finals rs) _) = (getState initial, map getState finals, rs)
+
+getSimulations :: Code -> [Simulation]
+getSimulations (Code _ sims) = sims
 
 getRuleFrom :: Rule -> (String, Symbol String)
 getRuleFrom (Rule state symbol _ _ _) = (getState state, symbol)
