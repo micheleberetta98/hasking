@@ -15,7 +15,7 @@ stack build
 
 Use `stack run -- [options]` to run the project.
 
-There are some tests that you can execute with `stack test`.
+There are some tests that you can execute with `stack test` (currently borked).
 
 ## Command line options
 
@@ -30,11 +30,16 @@ hasking [-i] [-s FILE] [-o FILE] [-t TAPE] [-v] [-h]
 | `-h`  | `--help`        | Prints the help page                                    |
 | `-s`  | `--script`      | The file containing the instructions (default `stdin`)  |
 | `-o`  | `--output`      | The output file (default `stdout`)                      |
-| `-t`  | `--tape`        | The initial tape to use (required if `-i` is used)      |
+| `-t`  | `--tape`        | The initial tape to use                                 |
 | `-i`  | `--interactive` | Run in interactive mode (terminal must support Unicode) |
 
-The initial tape will overwrite any tape definitions in your file.
-If you provide no initial tape using the `-t` option, its value will be searched in the input file.
+The `--tape` provided will be added to any `simulate-on` in your file.
+
+## Interactive mode
+
+When you are in the `--interactive` mode, only one tape will be used:
+* The tape specified via the `--tape` option if present
+* Otherwise, the first `simulate-on` definition in the file
 
 ## The language
 

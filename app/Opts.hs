@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 
 module Opts (Options(Options), getOpts) where
 
@@ -58,16 +59,16 @@ options :: [OptDescr (Options -> IO Options)]
 options =
     [ Option "s" ["script"]
         (ReqArg withInput "FILE")
-        "The file containing the machine specification. If not specified, it will use standard input (such as when piping)"
+        "The file containing the machine specification (default: stdin)"
     , Option "o" ["output"]
         (ReqArg withOutput "FILE")
-        "The output file. If not specified, it will use the standard output."
+        "The output file (default: stdout)"
     , Option "t" ["tape"]
         (ReqArg withTape "TAPE")
-        "The initial tape in the format {Symbol, Symbol, ...}, or even without the brackets.\nIt will overwrite any tape in the input file.\nIf not specified, it will be searched in the input file."
+        "The initial tape in the format \"Symbol, Symbol, ...\""
     , Option "i" ["interactive"]
         (NoArg withInteractiveModeOn)
-        "Run in interactive mode (requires a script file and a tape specified)."
+        "Run in interactive mode"
     , Option "v" ["version"]
         (NoArg printVersion)
         "Print the program version"
@@ -106,6 +107,17 @@ printVersion = const $ do
 
 -- | Prints the usage
 help :: a -> IO b
-help = const $ do
-  hPutStrLn stderr $ usageInfo "🖥  Hasking - A Turing Machine Interpreter written in Haskell" options
-  exitSuccess
+help _ = do
+    hPutStrLn stderr $ usageInfo title options
+    exitSuccess
+
+title :: String
+title = unlines
+  [ "        __ __         __    _          "
+  , "       / // /__ ____ / /__ (_)__  ___ _"
+  , "      / _  / _ `(_-</  '_// / _ \\/ _ `/"
+  , "     /_//_/\\_,_/___/_/\\_\\/_/_//_/\\_, / "
+  , "                                /___/  "
+  , ""
+  , " A Turing Machine Interpreter written in Haskell"
+  ]
