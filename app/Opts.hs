@@ -65,7 +65,7 @@ options =
         "The output file (default: stdout)"
     , Option "t" ["tape"]
         (ReqArg withTape "TAPE")
-        "The initial tape in the format \"Symbol, Symbol, ...\""
+        "The initial tape in the format \"Symbol Symbol ...\""
     , Option "i" ["interactive"]
         (NoArg withInteractiveModeOn)
         "Run in interactive mode"
