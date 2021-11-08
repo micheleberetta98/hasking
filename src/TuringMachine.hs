@@ -95,19 +95,21 @@ transition from ts = ts !? from
 currentFrom :: TuringMachine s a -> From s a
 currentFrom m = (current m, value $ tape m)
 
--- | Converts a @Code@ into a @TuringMachine String String@
-fromCode :: Code -> TuringMachine String String
-fromCode code = TuringMachine
-  { initial = start
-  , finals = map State finalStates
-  , transitions = buildTransitions rules
-  , current = start
-  , status = Running
-  , tape = empty
-  }
+-- | Converts a @Code@ into a @TuringMachine String String@, returning also the simulations (i.e. @Tape String@s)
+fromCode :: Code -> (TuringMachine String String, [Tape String])
+fromCode code = (m, tapes)
   where
+    m = TuringMachine
+      { initial = State initialState
+      , finals = map State finalStates
+      , transitions = buildTransitions rules
+      , current = State initialState
+      , status = Running
+      , tape = empty
+      }
+    tapes = map getSimulationTape (simulations code)
+
     (initialState, finalStates, rules) = getDefinitions $ definition code
-    start = State initialState
 
 ------------------------------------------------
 -- Utilities
