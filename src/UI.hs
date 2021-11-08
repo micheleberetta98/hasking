@@ -68,7 +68,6 @@ handleEvent s (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue $ goBack s
 handleEvent s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
 handleEvent s (VtyEvent (V.EvKey (V.KChar 'r') [])) = do
   (m, maybeTape) <- liftIO $ uiReload s
-  liftIO $ writeFile "out.txt" (show (pretty <$> maybeTape))
   case maybeTape of
     Nothing -> continue s{ uiStatus = UIError "No tape found" }
     Just t  -> continue $ s
@@ -141,7 +140,7 @@ drawTape :: TM -> Bool -> Widget Name
 drawTape m blinking =
   box 63 8 "Tape" $ vBox
     [ padBottom (Pad 1)
-    $ normalTape leftStrings <+> str " " <+> currentVal current <+> str " " <+> normalTape rightStrings
+    $ normalTape leftStrings <+> str " " <+> currentVal cur <+> str " " <+> normalTape rightStrings
     ,  cursor "∆"
     ]
   where
@@ -150,7 +149,7 @@ drawTape m blinking =
     cursor c = str (replicate halfTapeString  ' ') <+> str c
 
     fixedList = map pretty . toFixedList 15 $ tape m
-    (leftStrings, current:rightStrings) = splitAt 15 fixedList
+    (leftStrings, cur:rightStrings) = splitAt 15 fixedList
     halfTapeString = length (unwords leftStrings) + 1
 
 -- | Draws the current state box

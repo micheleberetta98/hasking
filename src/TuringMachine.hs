@@ -68,22 +68,22 @@ instance (Pretty s) => Pretty (State s) where
 -- | Executes a @TuringMachine@ with the specified @Tape@
 -- It returns @Left (state, symbol)@ if it ends up in an undefined state, or the resulting @Right TuringMachine@
 machine :: (Ord s, Ord a) => TuringMachine s a -> Tape a -> Either (From s a) (TuringMachine s a)
-machine tm tape = machine' $ withTape tape tm
+machine tm t = machine' $ withTape t tm
   where
-    machine' tm@TuringMachine{ status = Stopped } = Right tm
-    machine' tm                                   = step tm >>= machine'
+    machine' tm'@TuringMachine{ status = Stopped } = Right tm'
+    machine' tm'                                   = step tm' >>= machine'
 
 -- | Given a particular @TuringMachine@, it runs a transition giving maybe a new @TuringMachine@
 -- If the transition has not been defined, it returns @Left (From s a)@
 step :: (Ord s, Ord a) => TuringMachine s a -> Either (From s a) (TuringMachine s a)
 step tm@(TuringMachine _ _ _ _ Stopped _)     = Right tm
-step tm@(TuringMachine _ fs ts cur _ tape) =
+step tm@(TuringMachine _ fs ts _ _ t) =
   let from = currentFrom tm in
   case transition from ts of
     Nothing              -> Left from
     Just (st', out, dir) -> Right tm
                                   { current = st'
-                                  , tape = updateTape dir out tape
+                                  , tape = updateTape dir out t
                                   , status = if st' `elem` fs then Stopped else Running
                                   }
 
@@ -107,9 +107,8 @@ fromCode code = (m, tapes)
       , status = Running
       , tape = empty
       }
-    tapes = map getSimulationTape (simulations code)
-
-    (initialState, finalStates, rules) = getDefinitions $ definition code
+    tapes = map getSimulationTape (getSimulations code)
+    (initialState, finalStates, rules) = getDefinitions code
 
 ------------------------------------------------
 -- Utilities
@@ -131,4 +130,4 @@ buildTransitions = M.fromList . map formatRule
 -- | It updates a given tape by writing @value@ at the current position
 -- and moving @dir@
 updateTape :: Direction -> Symbol a -> Tape a -> Tape a
-updateTape dir value = move dir . write value
+updateTape dir v = move dir . write v
