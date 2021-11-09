@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 
 module Opts (Options(Options), getOpts) where
 
