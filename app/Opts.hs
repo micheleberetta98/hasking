@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 
 module Opts (Options(Options), getOpts) where
 
@@ -102,7 +101,7 @@ withInteractiveModeOn opts = return opts{ interactive = True }
 -- | Prints the version
 printVersion :: a -> IO b
 printVersion = const $ do
-  hPutStrLn stderr "3.1.0"
+  hPutStrLn stderr "3.1.1"
   exitSuccess
 
 -- | Prints the usage
@@ -114,7 +113,7 @@ help _ = do
 title :: String
 title = unlines
   [ "        __ __         __    _          "
-  , "       / // /__ ____ / /__ (_)__  ___ _"
+  , "       / // /__  ___ / /__ (_)__  ___ _"
   , "      / _  / _ `(_-</  '_// / _ \\/ _ `/"
   , "     /_//_/\\_,_/___/_/\\_\\/_/_//_/\\_, / "
   , "                                /___/  "
