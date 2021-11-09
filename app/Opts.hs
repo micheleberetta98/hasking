@@ -101,7 +101,7 @@ withInteractiveModeOn opts = return opts{ interactive = True }
 -- | Prints the version
 printVersion :: a -> IO b
 printVersion = const $ do
-  hPutStrLn stderr "3.1.0"
+  hPutStrLn stderr "3.1.1"
   exitSuccess
 
 -- | Prints the usage
