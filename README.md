@@ -1,5 +1,13 @@
 # Hasking
 
+```
+      __ __         __    _          
+     / // /__  ___ / /__ (_)__  ___ _
+    / _  / _ `(_-</  '_// / _ \/ _ `/
+   /_//_/\_,_/___/_/\_\/_/_//_/\_, / 
+                              /___/  
+```
+
 A very very simple Turing Machine simulator and interpreter written in Haskell.
 
 ## Compile and run
