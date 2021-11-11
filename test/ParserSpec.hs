@@ -47,4 +47,4 @@ parserTests = describe "Parser" $ do
     parseSymbol `over` "1" `shouldBe` Right (Symbol "1")
 
   it "parses whole tapes" $ do
-    pretty <$> (parseTape `over` "0 1 0 1") `shouldBe` Right "0 1 0 1"
+    pretty <$> (parseTape `over` "(0 1 0 1)") `shouldBe` Right "0 1 0 1"
