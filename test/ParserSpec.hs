@@ -1,52 +1,50 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module ParserSpec where
 
-import           Control.Applicative
-import           Parser
+import           Code
+import           Data.Char
+import           Data.Either
+import           Data.Text       (Text)
+import           Parser.Internal
+import           Pretty          (Pretty (pretty))
 import           Tape
 import           Test.Hspec
+import           Text.Megaparsec hiding (State)
+
+over :: Parsec e s a -> s -> Either (ParseErrorBundle s e) a
+p `over` input = parse p "" input
 
 parserTests :: SpecWith ()
 parserTests = describe "Parser" $ do
-  it "can parse chars" $ do
-    let
-      ok = runParser (char 'c') "cjhk"
-      notok = runParser (char 'x') "(x)"
-    ok `shouldBe` Just ('c', "jhk")
-    notok `shouldBe` Nothing
+  it "parses symbols" $ do
+    symbol "$" `over` "$" `shouldBe` Right "$"
+    symbol "$" `over` "$   " `shouldBe` Right "$"
 
-  it "can parse alphanumeric strings" $ do
-    let
-      ok = runParser alphaNum "123 rest"
-      notok = runParser alphaNum "**rest123"
-    ok `shouldBe` Just ("123", " rest")
-    notok `shouldBe` Nothing
+  it "parses lexemes" $ do
+    let number = read <$> many (satisfy isDigit)
+    lexeme number `over` "1234" `shouldBe` Right 1234
+    lexeme number `over` "77" `shouldBe` Right 77
 
-  it "should parse spaces and spaced things" $ do
-    runParser spaces "" `shouldBe` Just ("", "")
-    runParser spaces "   x" `shouldBe` Just ("   ", "x")
-    runParser spaces "x" `shouldBe` Just("", "x")
+  it "ignores comments" $ do
+    symbol "c" `over` "c ; Comment" `shouldBe` Right "c"
 
-    runParser (spaced alphaNum) "  12  " `shouldBe` Just ("12", "")
-    runParser (spaced alphaNum) "12  " `shouldBe` Just ("12", "")
-    runParser (spaced alphaNum) "  12" `shouldBe` Just ("12", "")
-    runParser (spaced alphaNum) "12" `shouldBe` Just ("12", "")
-    runParser (spaced alphaNum) "  -x12  " `shouldBe` Nothing
+  it "parses parenthesis" $ do
+    let number = read <$> many (satisfy isDigit)
+    parens number `over` "(1234)" `shouldBe` Right 1234
+    parens number `over` "[1234]" `shouldSatisfy` isLeft
 
-  it "should parse pure strings" $ do
-    runParser alpha "BEGIN" `shouldBe` Just ("BEGIN", "")
-    runParser alpha "BEGIN123" `shouldBe` Just ("BEGIN", "123")
-    runParser alpha "123" `shouldBe` Nothing
+  it "parses directions" $ do
+    parseDirection `over` "R" `shouldBe` Right R
+    parseDirection `over` "L" `shouldBe` Right L
+    parseDirection `over` "S" `shouldBe` Right S
+    parseDirection `over` "T" `shouldSatisfy` isLeft
 
-  it "should parse identifiers" $ do
-    runParser identifier "stateName123,xyz" `shouldBe` Just ("stateName123", ",xyz")
-    runParser identifier "123state,xyz" `shouldBe` Nothing
+  it "parses tape symbols" $ do
+    parseSymbol `over` "." `shouldBe` Right Blank
+    parseSymbol `over` "[" `shouldSatisfy` isLeft
+    parseSymbol `over` "#" `shouldBe` Right (Symbol "#")
+    parseSymbol `over` "1" `shouldBe` Right (Symbol "1")
 
-  it "should combine neatly" $ do
-    runParser (identifier <|> alpha) "12465" `shouldBe` Nothing
-
-    runParser (spaces *> identifier <* spaces) "   k123   " `shouldBe` Just ("k123", "")
-    runParser (spaces *> identifier <* spaces) "k123" `shouldBe` Just ("k123", "")
-    runParser (spaces *> identifier <* spaces) "  456  " `shouldBe` Nothing
-    runParser (spaces *> identifier <* spaces) "" `shouldBe` Nothing
-
-
+  it "parses whole tapes" $ do
+    pretty <$> (parseTape `over` "0 1 0 1") `shouldBe` Right "0 1 0 1"

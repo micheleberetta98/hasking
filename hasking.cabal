@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2b37a058b01b567f589293f209881d94a4e074c41e34061094db8bdf669c3d57
+-- hash: 6ab90ae61e5e64b1bdec4168b5bc3c653d197ed884d0a259eebceb7d4bdcd975
 
 name:           hasking
-version:        3.1.0
+version:        3.1.1
 description:    Please see the README on GitHub at <https://github.com/micheleberetta98/hasking#readme>
 homepage:       https://github.com/micheleberetta98/hasking#readme
 bug-reports:    https://github.com/micheleberetta98/hasking/issues
@@ -28,6 +28,7 @@ library
   exposed-modules:
       Code
       Parser
+      Parser.Internal
       Pretty
       Tape
       TuringMachine
@@ -67,12 +68,9 @@ test-suite hasking-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      CodeSpec
-      InstructionSpec
       ParserSpec
       TapeSpec
       TuringMachineSpec
-      UI
       Paths_hasking
   hs-source-dirs:
       test
