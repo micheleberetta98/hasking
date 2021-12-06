@@ -90,19 +90,15 @@ executeStep :: UIState -> UIState
 executeStep s@(UIState m t _ UIProcessing _) = updateUiState s (step m t)
 executeStep s                                = s
 
-  -- case step m of
-  --   Left _   -> s{ uiStatus = UIError "Invalid state reached" }
-  --   Right m' -> s{ machine = m', uiPrevious = Just m, uiStatus = s' }
-  --     where s' = if status m' == Stopped then UIFinished else UIProcessing
-
 -- | Updates the UI state based on the result of a single @step@
 updateUiState :: UIState -> Either (From String String) (TM, Tape String) -> UIState
-updateUiState state (Left _)  = state{ uiStatus = UIError "Invalid state reached" }
+updateUiState state (Left _)       = state{ uiStatus = UIError "Invalid state reached" }
 updateUiState state (Right (m, t)) =
   state
     { machine = m
+    , currentTape = t
     , uiPrevious = Just state
-    , uiStatus = if status m == Running then UIProcessing else UIFinished
+    , uiStatus = if status m == Stopped then UIFinished else UIProcessing
     }
 
 -- | Go back in history (if there's any)
