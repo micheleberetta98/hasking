@@ -2,7 +2,6 @@
 
 module Parser.Internal where
 
-import           Code
 import           Data.Char
 import           Data.Text                  (Text)
 import           Data.Void
@@ -10,6 +9,7 @@ import           Tape                       hiding (empty)
 import           Text.Megaparsec            hiding (State)
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import           TuringMachine.Internal
 
 -----------------------------------------------
 -- Types
@@ -17,30 +17,32 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 type Parser = Parsec Void Text
 
+data Code = Code (TuringMachine String String) [Tape String]
+
 -----------------------------------------------
 -- Interface
 -----------------------------------------------
 
 -- | Parses the whole code
 parseCode :: Parser Code
-parseCode = sc *> (mkCode <$> lexeme parseDefinition <*> many' parseSimulate)
+parseCode = sc *> (Code <$> lexeme parseMachine <*> many' parseSimulate)
 
 -- | Parses the actual machine definition
-parseDefinition :: Parser Definition
-parseDefinition = parens $ symbol "machine" *> definition
+parseMachine :: Parser (TuringMachine String String)
+parseMachine = parens (symbol "machine" *> definition)
   where
-    definition = mkDefinition
+    definition = mkMachine
       <$> lexeme initialState
       <*> lexeme finalStates
-      <*> rulesList
+      <*> rules
 
     initialState = parens $ symbol "initial" *> parseState
     finalStates = parens $ symbol "finals" *> parens (many' parseState)
-    rulesList = parens $ symbol "rules" *> parens (many' parseRule)
+    rules = buildTransitions <$> parens (symbol "rules" *> parens (many' parseRule))
 
 -- | Parses a single "rule" in the form @(state symbol state symbol direction)@
-parseRule :: Parser Rule
-parseRule = parens $ mkRule
+parseRule :: Parser (Rule String String)
+parseRule = parens $ (,,,,)
   <$> (parseState <* sc)
   <*> (parseSymbol <* sc)
   <*> (parseState <* sc)
@@ -48,12 +50,12 @@ parseRule = parens $ mkRule
   <*> parseDirection
 
 -- | Parses a @simulate-on@ definition
-parseSimulate :: Parser Simulation
-parseSimulate = mkSimulation <$> parens (symbol "simulate-on" *> parseTape)
+parseSimulate :: Parser (Tape String)
+parseSimulate = parens (symbol "simulate-on" *> parseTape)
 
 -- | Parses a state value
-parseState :: Parser State
-parseState = mkState <$> identifier <?> "state"
+parseState :: Parser (State String)
+parseState = State <$> identifier <?> "state"
   where
     identifier = (:) <$> satisfy isAlpha <*> many (satisfy isAlphaNum)
 

@@ -1,6 +1,5 @@
 module TuringMachine.Internal where
 
-import           Code          hiding (State)
 import           Data.Function
 import           Data.Map      (Map, (!?))
 import qualified Data.Map      as M
@@ -28,13 +27,15 @@ type Transitions s a = Map (From s a) (To s a)
 
 -- | The executable @TuringMachine@
 data TuringMachine s a = TuringMachine
-  { initial     :: State s
-  , finals      :: [State s]
-  , transitions :: Map (From s a) (To s a)
-  , current     :: State s
-  , status      :: Status
-  , tape        :: Tape a
-  }
+    { initial     :: State s
+    , finals      :: [State s]
+    , transitions :: Map (From s a) (To s a)
+    , current     :: State s
+    , status      :: Status
+    }
+
+-- | A simple utility for the parsing
+type Rule s a = (State String, Symbol a, State String, Symbol a, Direction)
 
 ------------------------------------------------
 -- Instances
@@ -53,67 +54,48 @@ instance (Pretty s) => Pretty (State s) where
 -- Interface
 ------------------------------------------------
 
--- | Executes a @TuringMachine@ with the specified @Tape@
--- It returns @Left (state, symbol)@ if it ends up in an undefined state, or the resulting @Right TuringMachine@
-machine :: (Ord s, Ord a) => TuringMachine s a -> Tape a -> Either (From s a) (TuringMachine s a)
-machine tm t = machine' $ withTape t tm
-  where
-    machine' tm'@TuringMachine{ status = Stopped } = Right tm'
-    machine' tm'                                   = step tm' >>= machine'
+mkMachine :: State s -> [State s] -> Map (From s a) (To s a) -> TuringMachine s a
+mkMachine from finalStates ts = TuringMachine
+  { initial = from
+  , finals = finalStates
+  , transitions = ts
+  , current = from
+  , status = Running
+  }
 
--- | Given a particular @TuringMachine@, it runs a transition giving maybe a new @TuringMachine@
+-- | Executes a @TuringMachine@ with the specified @Tape@
+-- It returns @Left (state, symbol)@ if it ends up in an undefined state, or the resulting @Right (TuringMachine, Tape)@
+machine :: (Ord s, Ord a) => TuringMachine s a -> Tape a -> Either (From s a) (TuringMachine s a, Tape a)
+machine tm t
+  | status tm == Stopped = Right (tm, t)
+  | otherwise            = step tm t >>= uncurry machine
+
+-- | Given a particular @TuringMachine@, it runs a transition giving maybe a new @(TuringMachine, Tape)@
 -- If the transition has not been defined, it returns @Left (From s a)@
-step :: (Ord s, Ord a) => TuringMachine s a -> Either (From s a) (TuringMachine s a)
-step tm@(TuringMachine _ _ _ _ Stopped _)     = Right tm
-step tm@(TuringMachine _ fs ts _ _ t) =
-  let from = currentFrom tm in
-  case transition from ts of
-    Nothing              -> Left from
-    Just (st', out, dir) -> Right tm
-                                  { current = st'
-                                  , tape = updateTape dir out t
-                                  , status = if st' `elem` fs then Stopped else Running
-                                  }
+step :: (Ord s, Ord a) => TuringMachine s a -> Tape a -> Either (From s a) (TuringMachine s a, Tape a)
+step tm@TuringMachine{ status = Stopped } t = Right (tm, t)
+step tm t                                   =
+  let c = current tm
+      val = value t
+  in case transition (c, val) (transitions tm) of
+    Nothing -> Left (c, val)
+    Just (s', out, dir) ->
+      let tm' = tm{ current = s', status = if s' `elem` finals tm then Stopped else Running }
+      in Right (tm', updateTape dir out t)
 
 -- | Lookups a single transition from a @Transitions s a@
 transition :: (Ord s, Ord a) => From s a -> Transitions s a -> Maybe (To s a)
 transition from ts = ts !? from
 
--- | Gives the current @State s@ and @Symbol a@
-currentFrom :: TuringMachine s a -> From s a
-currentFrom m = (current m, value $ tape m)
+-- ------------------------------------------------
+-- -- Utilities
+-- ------------------------------------------------
 
--- | Converts a @Code@ into a @TuringMachine String String@, returning also the simulations (i.e. @Tape String@s)
-fromCode :: Code -> (TuringMachine String String, [Tape String])
-fromCode code = (m, tapes)
-  where
-    m = TuringMachine
-      { initial = State initialState
-      , finals = map State finalStates
-      , transitions = buildTransitions rules
-      , current = State initialState
-      , status = Running
-      , tape = empty
-      }
-    tapes = map getSimulationTape (getSimulations code)
-    (initialState, finalStates, rules) = getDefinitions code
-
-------------------------------------------------
--- Utilities
-------------------------------------------------
-
--- | Overrides the @TuringMachine@'s @Tape@
-withTape :: Tape a -> TuringMachine s a -> TuringMachine s a
-withTape t tm = tm{ tape = t }
-
--- | Builds the transition Map from a list of @Code.Rule@
-buildTransitions :: [Rule] -> Transitions String String
+-- -- | Builds the transition Map from a list of @Rule@s
+buildTransitions :: [Rule String String] -> Transitions String String
 buildTransitions = M.fromList . map formatRule
   where
-    formatRule r =
-      let (fromState, fromSymbol) = getRuleFrom r
-          (toState, toSymbol, d) = getRuleTo r
-      in ((State fromState, fromSymbol), (State toState, toSymbol, d))
+    formatRule (fromState, fromSymbol, toState, toSymbol, dir) = ((fromState, fromSymbol), (toState, toSymbol, dir))
 
 -- | It updates a given tape by writing @value@ at the current position
 -- and moving @dir@

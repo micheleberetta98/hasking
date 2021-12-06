@@ -1,14 +1,12 @@
 module TuringMachine
   ( TuringMachine(..)
   , Status(..)
+  , State
   , From
   , To
   , machine
   , step
   , transition
-  , currentFrom
-  , fromCode
-  , withTape
   )
 where
 
