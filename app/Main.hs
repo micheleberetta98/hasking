@@ -1,19 +1,19 @@
 module Main (main) where
 
-import           Control.Monad
-import           Data.List
+import           Control.Monad   (void)
+import           Data.List       (intercalate)
 import           Data.Text       (Text)
 import qualified Data.Text       as T
-import           Data.Void
-import           Opts
-import           Parser
-import           Pretty
-import           System.Exit
-import           System.IO
-import           Tape
-import           Text.Megaparsec hiding (empty)
-import           TuringMachine
-import           UI
+import           Data.Void       (Void)
+import           Opts            (Options (Options), getOpts)
+import           Parser          (Code (..), parseCode)
+import           Pretty          (Pretty (pretty))
+import           System.Exit     (exitFailure)
+import           System.IO       (hPutStrLn, stderr)
+import           Tape            (Tape)
+import           Text.Megaparsec (ParseErrorBundle, errorBundlePretty, parse)
+import           TuringMachine   (TuringMachine, machine)
+import           UI              (runUiWith)
 
 type TM = TuringMachine String String
 

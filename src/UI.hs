@@ -6,11 +6,12 @@ import           Brick                      hiding (Direction)
 import qualified Brick.Widgets.Border       as B
 import qualified Brick.Widgets.Border.Style as BS
 import qualified Brick.Widgets.Center       as C
-import           Control.Monad.IO.Class
+import           Control.Monad.IO.Class     (MonadIO (liftIO))
+import           Data.Maybe                 (fromMaybe)
 import qualified Graphics.Vty               as V
-import           Parser
-import           Pretty
-import           Tape
+import           Parser                     (Code (..))
+import           Pretty                     (Pretty (pretty))
+import           Tape                       (Symbol, Tape (..), toFixedList)
 import           TuringMachine              hiding (machine)
 
 ------------------------------------------------
@@ -65,20 +66,20 @@ app = App
 
 -- | Handles a generic event
 handleEvent :: UIState -> BrickEvent Name CustomEvent -> EventM Name (Next UIState)
-handleEvent s (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue $ executeStep s
-handleEvent s (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue $ goBack s
+handleEvent s (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue (executeStep s)
+handleEvent s (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue (goBack s)
 handleEvent s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
+handleEvent s (VtyEvent (V.EvKey V.KEsc []))        = halt s
 handleEvent s (VtyEvent (V.EvKey (V.KChar 'r') [])) = do
-  Code m tapes <- liftIO $ uiReload s
+  Code m tapes <- liftIO (uiReload s)
   case tapes of
-    [] -> continue s{ uiStatus = UIError "No tape found" }
-    (t:_)  -> continue $ s
+    []    -> continue s{ uiStatus = UIError "No tape found" }
+    (t:_) -> continue $ s
       { machine = m
       , currentTape = t
       , uiPrevious = Nothing
       , uiStatus = UIProcessing
       }
-handleEvent s (VtyEvent (V.EvKey V.KEsc []))        = halt s
 handleEvent s _                                     = continue s
 
 ------------------------------------------------
@@ -103,8 +104,7 @@ updateUiState state (Right (m, t)) =
 
 -- | Go back in history (if there's any)
 goBack :: UIState -> UIState
-goBack (UIState _ _ (Just p) _ _) = p
-goBack s                          = s
+goBack = fromMaybe <$> id <*> uiPrevious
 
 ------------------------------------------------
 -- Main parts
@@ -139,7 +139,7 @@ drawTape s =
   box 63 8 "Tape" $ vBox
     [ padBottom (Pad 1)
     $ normalTape leftStrings <+> str " " <+> currentVal cur <+> str " " <+> normalTape rightStrings
-    ,  cursor "∆"
+    , cursor "∆"
     ]
   where
     blinking = uiStatus s == UIProcessing
