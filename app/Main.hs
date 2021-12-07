@@ -20,9 +20,8 @@ type TM = TuringMachine String String
 main :: IO ()
 main = do
   opts <- getOpts
-  let
-    (Options input output t interactive) = opts
-    load = addTape t <$> loadMachine input
+  let (Options input output t interactive) = opts
+      load = addTape t <$> loadMachine input
 
   Code m tapes <- load
 
