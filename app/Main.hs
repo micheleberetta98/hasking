@@ -27,7 +27,7 @@ main = do
 
   if interactive
     then void $ executeUI m tapes load
-    else output (executeMachine m tapes)
+    else output $ executeMachine m tapes
 
 loadMachine :: IO Text -> IO Code
 loadMachine input = input >>= handleErrors . parse parseCode ""
@@ -42,14 +42,12 @@ executeMachine :: TM -> [Tape String] -> Text
 executeMachine tm = T.pack . intercalate "\n" . map (format . machine tm)
   where
     format (Left (state, symbol)) = concat ["(!) Invalid state reached: (", pretty state, ", ", pretty symbol, ")"]
-    format (Right (_, t)) = pretty t
+    format (Right (_, t))         = pretty t
 
 addTape :: Maybe (Tape String) -> Code -> Code
 addTape Nothing c                       = c
 addTape (Just extraTape) (Code m tapes) = Code m (extraTape : tapes)
 
 handleErrors :: Either (ParseErrorBundle Text Void) Code -> IO Code
-handleErrors (Left errors) = do
-  hPutStrLn stderr (errorBundlePretty errors)
-  exitFailure
-handleErrors (Right c) = pure c
+handleErrors (Left errors) = hPutStrLn stderr (errorBundlePretty errors) >> exitFailure
+handleErrors (Right c)     = pure c
