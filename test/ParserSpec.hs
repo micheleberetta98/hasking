@@ -2,17 +2,14 @@
 
 module ParserSpec where
 
-import           Code.Internal
-import           Control.Monad.IO.Class
 import           Data.Char
 import           Data.Either
-import           Data.Text              (Text)
-import qualified Data.Text              as T
 import           Parser.Internal
-import           Pretty                 (Pretty (pretty))
+import           Pretty
 import           Tape
 import           Test.Hspec
 import           Text.Megaparsec        hiding (State)
+import           TuringMachine.Internal
 
 over :: Parsec e s a -> s -> Either (ParseErrorBundle s e) a
 p `over` input = parse p "" input
@@ -55,15 +52,15 @@ parserTests = describe "Parser" $ do
     parseState `over` "q0" `shouldBe` Right (State "q0")
     parseState `over` "1a" `shouldSatisfy` isLeft
 
-  it "parses simulate (i.e. tapes)" $ do
-    pretty <$> (parseSimulate `over` "(simulate-on (0 1 r #))") `shouldBe` Right "(simulate-on (0 1 r #))"
+  it "parses simulations (i.e. tapes)" $ do
+    pretty <$> (parseSimulate `over` "(simulate-on (0 1 r #))") `shouldBe` Right "0 1 r #"
     parseSimulate `over` "(simulate-on 0 1 r #)" `shouldSatisfy` isLeft
     parseSimulate `over` "(simulateon (0 1 r #))" `shouldSatisfy` isLeft
     parseSimulate `over` "(simulateon ([ ]))" `shouldSatisfy` isLeft
 
   it "parses rules" $ do
-    parseRule `over` "(s  0 s  1 R)" `shouldBe` Right (Rule (State "s")  (Symbol "0") (State "s") (Symbol "1") R)
-    parseRule `over` "(q0 # q1 . S)" `shouldBe` Right (Rule (State "q0") (Symbol "#") (State "q1") Blank       S)
+    parseRule `over` "(s  0 s  1 R)" `shouldBe` Right (State "s",  Symbol "0", State "s",  Symbol "1", R)
+    parseRule `over` "(q0 # q1 . S)" `shouldBe` Right (State "q0", Symbol "#", State "q1", Blank,      S)
     parseRule `over` "(s 0 s 1 T)" `shouldSatisfy` isLeft
     parseRule `over` "(s 0 1 s R)" `shouldSatisfy` isLeft
     parseRule `over` "(0 0 0 0 S)" `shouldSatisfy` isLeft
@@ -79,10 +76,15 @@ parserTests = describe "Parser" $ do
               \     (x 1 x 1 L)\n\
               \     (x . f . R))))\n\
               \"
-    parseDefinition `over` def `shouldBe` Right (
-      Definition (State "s") [State "f"]
-        [ Rule (State "s") (Symbol "0") (State "s") (Symbol "1") R
-        , Rule (State "s") Blank        (State "x") Blank        L
-        , Rule (State "x") (Symbol "1") (State "x") (Symbol "1") L
-        , Rule (State "x") Blank        (State "f") Blank        R
-        ])
+        expected = TuringMachine
+                     (State "s")
+                     [State "f"]
+                     ( buildTransitions
+                        [ ((State "s"), (Symbol "0"), (State "s"), (Symbol "1"), R)
+                        , ((State "s"), Blank       , (State "x"), Blank       , L)
+                        , ((State "x"), (Symbol "1"), (State "x"), (Symbol "1"), L)
+                        , ((State "x"), Blank       , (State "f"), Blank       , R)
+                        ])
+                      (State "s")
+                      Running
+    parseMachine `over` def `shouldBe` Right expected

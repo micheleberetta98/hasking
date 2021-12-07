@@ -33,6 +33,7 @@ data TuringMachine s a = TuringMachine
     , current     :: State s
     , status      :: Status
     }
+    deriving (Show, Eq)
 
 -- | A simple utility for the parsing
 type Rule s a = (State String, Symbol a, State String, Symbol a, Direction)
