@@ -11,7 +11,8 @@ import           Data.Maybe                 (fromMaybe)
 import qualified Graphics.Vty               as V
 import           Parser                     (Code (..))
 import           Pretty                     (Pretty (pretty))
-import           Tape                       (Symbol, Tape (..), toFixedList)
+import           Tape                       (Direction, Symbol, Tape (..),
+                                             toFixedList)
 import           TuringMachine              hiding (machine)
 
 ------------------------------------------------
@@ -33,6 +34,17 @@ data UIState = UIState
 
 type CustomEvent = ()
 type Name = ()
+
+data Visualized a = DontShow | Missing | Visualized a
+
+------------------------------------------------
+-- Instances
+------------------------------------------------
+
+instance Pretty a => Pretty (Visualized a) where
+  pretty DontShow       = ""
+  pretty Missing        = "-"
+  pretty (Visualized a) = pretty a
 
 ------------------------------------------------
 -- Interface
@@ -113,7 +125,7 @@ goBack = fromMaybe <$> id <*> uiPrevious
 -- | Draws the entire UI
 drawUI :: UIState -> [Widget Name]
 drawUI s =
-  [ C.center $ drawTitle (uiStatus s)
+  [   C.center $ drawTitle (uiStatus s)
   <=> drawTape s
   <=> (drawPrevious s <+> drawCurrent s <+> drawNext s)
   <=> drawInstructions
@@ -122,16 +134,12 @@ drawUI s =
 -- | Draws the title, displaying the UIerror message (if there's any) or if the
 -- computation has terminated
 drawTitle :: UIStatus -> Widget n
-drawTitle = filled . drawTitle'
+drawTitle = hLimit 63 . withBorderStyle BS.unicodeBold . lateralBorders . drawTitle'
   where
-    filled x =
-      hLimit 63
-      $ withBorderStyle BS.unicodeBold
-      $ B.hBorder <+> str " " <+> x <+> str " " <+> B.hBorder
-
-    drawTitle' (UIError msg) = withAttr errorAttr $ str msg
+    lateralBorders x = B.hBorder <+> str " " <+> x <+> str " " <+> B.hBorder
+    drawTitle' (UIError msg) = withAttr errorAttr    $ str msg
     drawTitle' UIFinished    = withAttr finishedAttr $ str "You reached the end!"
-    drawTitle' UIProcessing  = withAttr titleAttr $ str "Hasking Simulator"
+    drawTitle' UIProcessing  = withAttr titleAttr    $ str "Hasking Simulator"
 
 -- | Draws the tape box
 drawTape :: UIState -> Widget Name
@@ -142,9 +150,8 @@ drawTape s =
     , cursor "∆"
     ]
   where
-    blinking = uiStatus s == UIProcessing
     normalTape = str . unwords
-    currentVal = (if blinking then withAttr blinkAttr else id) . str
+    currentVal = (if uiStatus s == UIProcessing then withAttr blinkAttr else id) . str
     cursor c = str (replicate halfTapeString  ' ') <+> str c
 
     fixedList = map pretty . toFixedList 15 $ currentTape s
@@ -153,31 +160,25 @@ drawTape s =
 
 -- | Draws the current state box
 drawCurrent :: UIState -> Widget Name
-drawCurrent s = machineBox "Current"
-    [ Just (pretty state)
-    , Just (pretty val)
-    , Nothing
-    ]
+drawCurrent s = machineBox "Current" (Visualized state, Visualized val, DontShow)
   where (state, val) = currentFrom s
 
 -- | Draws the next state box
 drawNext :: UIState -> Widget Name
-drawNext s = machineBox "Next" [Just s', Just written, Just dir]
+drawNext s = machineBox "Next" $
+  case transition from (transitions m) of
+    Just (s', out, d) -> (Visualized s', Visualized out, Visualized d)
+    Nothing           -> (Missing, Missing, DontShow)
   where
     m = machine s
     from = (current m, value $ currentTape s)
-    (s', written, dir) = case transition from (transitions m) of
-      Just (s', out, d) -> (pretty s', pretty out, pretty d)
-      Nothing           -> ("-", "-", "-")
 
 -- | Draws the previous state box
 drawPrevious :: UIState -> Widget Name
 drawPrevious = machineBox "Previous" . getInfo' . uiPrevious
   where
-    getInfo' Nothing = [Just "-", Just "-", Nothing]
-    getInfo' (Just p)  =
-      let (s, v) = currentFrom p
-      in [Just (pretty s), Just (pretty v), Nothing]
+    getInfo' Nothing  = (Missing, Missing, DontShow)
+    getInfo' (Just p) = let (s, v) = currentFrom p in (Visualized s, Visualized v, DontShow)
 
 -- | Draws the instructions box
 drawInstructions :: Widget Name
@@ -196,16 +197,15 @@ currentFrom :: UIState -> (State String, Symbol String)
 currentFrom s = (current $ machine s, value $ currentTape s)
 
 -- | Draws a machine box displaying @State@, @Symbol@ and @Direction@
-machineBox :: String -> [Maybe String] -> Widget Name
-machineBox title = statusBox title . machineInfo
+machineBox :: String -> (Visualized (State String), Visualized (Symbol String), Visualized Direction ) -> Widget Name
+machineBox title (state, symbol, dir) =  box 21 9 title $ vBox
+  [ str $ prepend "State:  " state
+  , str $ prepend "Symbol: " symbol
+  , str $ prepend "Dir:    " dir
+  ]
   where
-    machineInfo = map str . zipWith formatStr ["State:  ", "Symbol: ", "Dir:    "]
-    formatStr _ Nothing    = " "
-    formatStr s1 (Just s2) = s1 ++ s2
-
--- | A generic box for a status
-statusBox :: String -> [Widget Name] -> Widget Name
-statusBox title content = box 21 9 title $ vBox content
+    prepend _ DontShow = " "
+    prepend s1 s2      = s1 ++ pretty s2
 
 -- | A generic box
 box :: Int -> Int -> String -> Widget Name -> Widget Name

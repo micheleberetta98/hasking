@@ -33,6 +33,27 @@ data Direction = L | R | S
   deriving (Show, Eq)
 
 -----------------------------------------------
+-- Instances
+-----------------------------------------------
+
+instance (Pretty s) => Pretty (Symbol s) where
+  pretty (Symbol s) = pretty s
+  pretty Blank      = "."
+
+instance (Ord s) => Ord (Symbol s) where
+  compare Blank Blank             = EQ
+  compare Blank _                 = LT
+  compare _ Blank                 = GT
+  compare (Symbol s1) (Symbol s2) = compare s1 s2
+
+instance (Pretty a) => Pretty (Tape a) where
+  pretty = pretty . toList
+
+instance Pretty Direction where
+  pretty = show
+
+
+-----------------------------------------------
 -- Tape conversions
 -----------------------------------------------
 
@@ -103,23 +124,3 @@ updateRight to (Cell s l _) = h
   where
     h = Cell s prev to
     prev = updateRight h l
-
------------------------------------------------
--- Instances
------------------------------------------------
-
-instance (Pretty s) => Pretty (Symbol s) where
-  pretty (Symbol s) = pretty s
-  pretty Blank      = "."
-
-instance (Ord s) => Ord (Symbol s) where
-  compare Blank Blank             = EQ
-  compare Blank _                 = LT
-  compare _ Blank                 = GT
-  compare (Symbol s1) (Symbol s2) = compare s1 s2
-
-instance (Pretty a) => Pretty (Tape a) where
-  pretty = pretty . toList
-
-instance Pretty Direction where
-  pretty = show
