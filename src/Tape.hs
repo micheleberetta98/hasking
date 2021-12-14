@@ -11,7 +11,7 @@ module Tape
   , write
   ) where
 
-import           Pretty (Pretty (..), prettyList)
+import           Pretty (Pretty (..))
 
 -----------------------------------------------
 -- Data declarations
@@ -119,7 +119,7 @@ instance (Ord s) => Ord (Symbol s) where
   compare (Symbol s1) (Symbol s2) = compare s1 s2
 
 instance (Pretty a) => Pretty (Tape a) where
-  pretty = prettyList . toList
+  pretty = pretty . toList
 
 instance Pretty Direction where
   pretty = show

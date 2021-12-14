@@ -1,10 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Pretty
-  ( Pretty(..)
-  , wrap
-  , prettyList
-  ) where
+module Pretty where
 
 import           Data.List (intercalate)
 
@@ -13,16 +9,11 @@ import           Data.List (intercalate)
 class Pretty a where
   pretty :: a -> String
 
-instance Pretty String where
+instance {-# OVERlAPS #-} Pretty String where
   pretty = id
+
+instance {-# OVERlAPS #-} Pretty a => Pretty [a] where
+  pretty = unwords . map pretty
 
 instance Pretty Int where
   pretty = show
-
--- | Wraps a @Pretty@ instance content in two delimiters
-wrap :: (Pretty a) => String -> a -> String -> String
-wrap c1 content c2 = c1 ++ pretty content ++ c2
-
--- | Prettify all elements in a list and joins them with a space
-prettyList :: (Pretty a) => [a] -> String
-prettyList = unwords . map pretty
