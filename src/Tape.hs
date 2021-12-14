@@ -18,7 +18,8 @@ import           Pretty (Pretty (..), prettyList)
 -----------------------------------------------
 
 -- | Represents a Symbol, which can be the control symbol @Blank@ or user defined data
-data Symbol a = Blank | Symbol a deriving (Show, Eq)
+data Symbol a = Blank | Symbol a
+  deriving (Show, Eq)
 
 -- | An infinite Tape of Symbols of type @a@, which can be moved either *left* or *right*
 data Tape a = Cell
@@ -28,7 +29,8 @@ data Tape a = Cell
   deriving (Show, Eq)
 
 -- | Represents movement (@L@ = left, @R@ = right, @S@ = stay)
-data Direction = L | R | S deriving (Show, Eq)
+data Direction = L | R | S
+  deriving (Show, Eq)
 
 -----------------------------------------------
 -- Tape conversions
@@ -117,7 +119,7 @@ instance (Ord s) => Ord (Symbol s) where
   compare (Symbol s1) (Symbol s2) = compare s1 s2
 
 instance (Pretty a) => Pretty (Tape a) where
-  pretty t = prettyList (toList t)
+  pretty = prettyList . toList
 
 instance Pretty Direction where
   pretty = show

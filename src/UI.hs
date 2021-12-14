@@ -6,11 +6,14 @@ import           Brick                      hiding (Direction)
 import qualified Brick.Widgets.Border       as B
 import qualified Brick.Widgets.Border.Style as BS
 import qualified Brick.Widgets.Center       as C
-import           Control.Monad.IO.Class
+import           Control.Monad.IO.Class     (MonadIO (liftIO))
+import           Data.Maybe                 (fromMaybe)
 import qualified Graphics.Vty               as V
-import           Pretty
-import           Tape
+import           Parser                     (Code (..))
+import           Pretty                     (Pretty (pretty))
+import           Tape                       (Symbol, Tape (..), toFixedList)
 import           TuringMachine              hiding (machine)
+
 ------------------------------------------------
 -- Types
 ------------------------------------------------
@@ -22,10 +25,10 @@ data UIStatus = UIProcessing | UIFinished | UIError String
 
 data UIState = UIState
   { machine     :: TM
-  , initialTape :: Tape String
+  , currentTape :: Tape String
   , uiPrevious  :: Maybe UIState
   , uiStatus    :: UIStatus
-  , uiReload    :: IO (TM, Maybe (Tape String))
+  , uiReload    :: IO Code
   }
 
 type CustomEvent = ()
@@ -36,12 +39,12 @@ type Name = ()
 ------------------------------------------------
 
 -- | Functions that runs the app with some defaults
-runUiWith :: TM -> Tape String -> IO (TM, Maybe (Tape String)) -> IO UIState
+runUiWith :: TM -> Tape String -> IO Code -> IO UIState
 runUiWith m t load = do
   defaultMain app $
     UIState
-      { machine = withTape t m
-      , initialTape = t
+      { machine = m
+      , currentTape = t
       , uiPrevious = Nothing
       , uiStatus = UIProcessing
       , uiReload = load
@@ -63,19 +66,20 @@ app = App
 
 -- | Handles a generic event
 handleEvent :: UIState -> BrickEvent Name CustomEvent -> EventM Name (Next UIState)
-handleEvent s (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue $ executeStep s
-handleEvent s (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue $ goBack s
+handleEvent s (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue (executeStep s)
+handleEvent s (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue (goBack s)
 handleEvent s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
+handleEvent s (VtyEvent (V.EvKey V.KEsc []))        = halt s
 handleEvent s (VtyEvent (V.EvKey (V.KChar 'r') [])) = do
-  (m, maybeTape) <- liftIO $ uiReload s
-  case maybeTape of
-    Nothing -> continue s{ uiStatus = UIError "No tape found" }
-    Just t  -> continue $ s
-      { machine = withTape t m
+  Code m tapes <- liftIO (uiReload s)
+  case tapes of
+    []    -> continue s{ uiStatus = UIError "No tape found" }
+    (t:_) -> continue $ s
+      { machine = m
+      , currentTape = t
       , uiPrevious = Nothing
       , uiStatus = UIProcessing
       }
-handleEvent s (VtyEvent (V.EvKey V.KEsc []))        = halt s
 handleEvent s _                                     = continue s
 
 ------------------------------------------------
@@ -84,28 +88,23 @@ handleEvent s _                                     = continue s
 
 -- | Executes a single step forward if the machine hasn't UIfinished
 executeStep :: UIState -> UIState
-executeStep s@(UIState m _ _ UIProcessing _) = updateUiState s (step m)
+executeStep s@(UIState m t _ UIProcessing _) = updateUiState s (step m t)
 executeStep s                                = s
 
-  -- case step m of
-  --   Left _   -> s{ uiStatus = UIError "Invalid state reached" }
-  --   Right m' -> s{ machine = m', uiPrevious = Just m, uiStatus = s' }
-  --     where s' = if status m' == Stopped then UIFinished else UIProcessing
-
 -- | Updates the UI state based on the result of a single @step@
-updateUiState :: UIState -> Either (From String String) TM -> UIState
-updateUiState state (Left _)  = state{ uiStatus = UIError "Invalid state reached" }
-updateUiState state (Right m) =
+updateUiState :: UIState -> Either (From String String) (TM, Tape String) -> UIState
+updateUiState state (Left _)       = state{ uiStatus = UIError "Invalid state reached" }
+updateUiState state (Right (m, t)) =
   state
     { machine = m
+    , currentTape = t
     , uiPrevious = Just state
-    , uiStatus = if status m == Running then UIProcessing else UIFinished
+    , uiStatus = if status m == Stopped then UIFinished else UIProcessing
     }
 
 -- | Go back in history (if there's any)
 goBack :: UIState -> UIState
-goBack (UIState _ _ (Just p) _ _) = p
-goBack s                          = s
+goBack = fromMaybe <$> id <*> uiPrevious
 
 ------------------------------------------------
 -- Main parts
@@ -115,11 +114,10 @@ goBack s                          = s
 drawUI :: UIState -> [Widget Name]
 drawUI s =
   [ C.center $ drawTitle (uiStatus s)
-  <=> drawTape m (uiStatus s == UIProcessing)
-  <=> (drawPrevious s <+> drawCurrent m <+> drawNext m)
+  <=> drawTape s
+  <=> (drawPrevious s <+> drawCurrent s <+> drawNext s)
   <=> drawInstructions
   ]
-  where m = machine s
 
 -- | Draws the title, displaying the UIerror message (if there's any) or if the
 -- computation has terminated
@@ -136,36 +134,39 @@ drawTitle = filled . drawTitle'
     drawTitle' UIProcessing  = withAttr titleAttr $ str "Hasking Simulator"
 
 -- | Draws the tape box
-drawTape :: TM -> Bool -> Widget Name
-drawTape m blinking =
+drawTape :: UIState -> Widget Name
+drawTape s =
   box 63 8 "Tape" $ vBox
     [ padBottom (Pad 1)
     $ normalTape leftStrings <+> str " " <+> currentVal cur <+> str " " <+> normalTape rightStrings
-    ,  cursor "∆"
+    , cursor "∆"
     ]
   where
+    blinking = uiStatus s == UIProcessing
     normalTape = str . unwords
     currentVal = (if blinking then withAttr blinkAttr else id) . str
     cursor c = str (replicate halfTapeString  ' ') <+> str c
 
-    fixedList = map pretty . toFixedList 15 $ tape m
+    fixedList = map pretty . toFixedList 15 $ currentTape s
     (leftStrings, cur:rightStrings) = splitAt 15 fixedList
     halfTapeString = length (unwords leftStrings) + 1
 
 -- | Draws the current state box
-drawCurrent :: TM -> Widget Name
-drawCurrent m = machineBox "Current"
-    [ Just (pretty s)
-    , Just (pretty v)
+drawCurrent :: UIState -> Widget Name
+drawCurrent s = machineBox "Current"
+    [ Just (pretty state)
+    , Just (pretty val)
     , Nothing
     ]
-  where (s, v) = currentFrom m
+  where (state, val) = currentFrom s
 
 -- | Draws the next state box
-drawNext :: TM -> Widget Name
-drawNext m = machineBox "Next" [Just s, Just written, Just dir]
+drawNext :: UIState -> Widget Name
+drawNext s = machineBox "Next" [Just s', Just written, Just dir]
   where
-    (s, written, dir) = case transition (currentFrom m) (transitions m) of
+    m = machine s
+    from = (current m, value $ currentTape s)
+    (s', written, dir) = case transition from (transitions m) of
       Just (s', out, d) -> (pretty s', pretty out, pretty d)
       Nothing           -> ("-", "-", "-")
 
@@ -175,7 +176,7 @@ drawPrevious = machineBox "Previous" . getInfo' . uiPrevious
   where
     getInfo' Nothing = [Just "-", Just "-", Nothing]
     getInfo' (Just p)  =
-      let (s, v) = currentFrom (machine p)
+      let (s, v) = currentFrom p
       in [Just (pretty s), Just (pretty v), Nothing]
 
 -- | Draws the instructions box
@@ -190,6 +191,9 @@ drawInstructions = box 63 9 "Instructions" $ vBox
 ------------------------------------------------
 -- Utilities
 ------------------------------------------------
+
+currentFrom :: UIState -> (State String, Symbol String)
+currentFrom s = (current $ machine s, value $ currentTape s)
 
 -- | Draws a machine box displaying @State@, @Symbol@ and @Direction@
 machineBox :: String -> [Maybe String] -> Widget Name

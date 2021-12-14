@@ -2,20 +2,19 @@
 
 module Opts (Options(Options), getOpts) where
 
-import           System.Console.GetOpt (ArgDescr (NoArg, ReqArg),
-                                        ArgOrder (RequireOrder), OptDescr (..),
-                                        getOpt, usageInfo)
-
-import           Data.List
+import           Data.List             (foldl')
 import           Data.Text             (Text)
 import qualified Data.Text             as T
 import qualified Data.Text.IO          as TIO
-import           Parser
-import           System.Environment
-import           System.Exit
-import           System.IO
-import           Tape
-import           Text.Megaparsec
+import           Parser                (parseTape)
+import           System.Console.GetOpt (ArgDescr (NoArg, ReqArg),
+                                        ArgOrder (RequireOrder), OptDescr (..),
+                                        getOpt, usageInfo)
+import           System.Environment    (getArgs)
+import           System.Exit           (exitFailure, exitSuccess)
+import           System.IO             (hPutStrLn, stderr)
+import           Tape                  (Tape)
+import           Text.Megaparsec       (parse)
 
 ------------------------------------------------
 -- Data types
