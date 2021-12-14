@@ -14,7 +14,7 @@ module Tape
 import           Pretty (Pretty (..))
 
 -----------------------------------------------
--- Data declarations
+-- Types
 -----------------------------------------------
 
 -- | Represents a Symbol, which can be the control symbol @Blank@ or user defined data
