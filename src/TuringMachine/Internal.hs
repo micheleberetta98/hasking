@@ -29,14 +29,14 @@ type Transitions s a = Map (From s a) (To s a)
 data TuringMachine s a = TuringMachine
     { initial     :: State s
     , finals      :: [State s]
-    , transitions :: Map (From s a) (To s a)
+    , transitions :: Transitions s a
     , current     :: State s
     , status      :: Status
     }
     deriving (Show, Eq)
 
--- | A simple utility for the parsing
-type Rule s a = (State String, Symbol a, State String, Symbol a, Direction)
+-- | A simple utility for rules
+type Rule s a = (State s, Symbol a, State s, Symbol a, Direction)
 
 ------------------------------------------------
 -- Instances
@@ -55,7 +55,7 @@ instance (Pretty s) => Pretty (State s) where
 -- Interface
 ------------------------------------------------
 
-mkMachine :: State s -> [State s] -> Map (From s a) (To s a) -> TuringMachine s a
+mkMachine :: State s -> [State s] -> Transitions s a -> TuringMachine s a
 mkMachine from finalStates ts = TuringMachine
   { initial = from
   , finals = finalStates

@@ -25,11 +25,11 @@ data Code = Code (TuringMachine String String) [Tape String]
 
 -- | Parses the whole code
 parseCode :: Parser Code
-parseCode = sc *> (Code <$> lexeme parseMachine <*> many' parseSimulate)
+parseCode = sc *> (Code <$> parseMachine <*> many parseSimulate)
 
 -- | Parses the actual machine definition
 parseMachine :: Parser (TuringMachine String String)
-parseMachine = parens (symbol "machine" *> definition)
+parseMachine = lexeme $ parens (symbol "machine" *> definition)
   where
     definition = mkMachine
       <$> lexeme initialState
@@ -37,12 +37,12 @@ parseMachine = parens (symbol "machine" *> definition)
       <*> rules
 
     initialState = parens $ symbol "initial" *> parseState
-    finalStates = parens $ symbol "finals" *> parens (many' parseState)
-    rules = buildTransitions <$> parens (symbol "rules" *> parens (many' parseRule))
+    finalStates = parens $ symbol "finals" *> parens (many parseState)
+    rules = buildTransitions <$> parens (symbol "rules" *> parens (many parseRule))
 
 -- | Parses a single "rule" in the form @(state symbol state symbol direction)@
 parseRule :: Parser (Rule String String)
-parseRule = parens $ (,,,,)
+parseRule = lexeme . parens $ (,,,,)
   <$> (parseState <* sc)
   <*> (parseSymbol <* sc)
   <*> (parseState <* sc)
@@ -51,21 +51,20 @@ parseRule = parens $ (,,,,)
 
 -- | Parses a @simulate-on@ definition
 parseSimulate :: Parser (Tape String)
-parseSimulate = parens (symbol "simulate-on" *> parseTape)
+parseSimulate = lexeme $ parens (symbol "simulate-on" *> parseTape)
 
 -- | Parses a state value
 parseState :: Parser (State String)
-parseState = State <$> identifier <?> "state"
-  where
-    identifier = (:) <$> satisfy isAlpha <*> many (satisfy isAlphaNum)
+parseState = State <$> lexeme identifier <?> "state"
+  where identifier = (:) <$> satisfy isAlpha <*> many (satisfy isAlphaNum)
 
 -- | Parses a tape
 parseTape :: Parser (Tape String)
-parseTape = Tape.fromList <$> parens (many' parseSymbol) <?> "tape (symbols' list)"
+parseTape = Tape.fromList <$> parens (many parseSymbol) <?> "tape (symbols' list)"
 
 -- | Parses a symbol
 parseSymbol :: Parser (Symbol String)
-parseSymbol = (blank <|> symbolValue) <?> "symbol"
+parseSymbol = lexeme (blank <|> symbolValue) <?> "symbol"
   where
     blank = Blank <$ string "."
     symbolValue = Symbol <$> some (noneOf [' ', '(', ')', '[', ']', '{', '}', ';'])
@@ -93,10 +92,6 @@ lexeme = L.lexeme sc
 -- | A space consumer, ignores comments (beginning with @;@)
 sc :: Parser ()
 sc = L.space space1 (L.skipLineComment ";") empty
-
--- | Parses @many@ of a certain @lexeme@
-many' :: Parser a -> Parser [a]
-many' = many . lexeme
 
 -- | Wraps the parser @p@ in parentheses
 parens :: Parser a -> Parser a

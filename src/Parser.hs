@@ -1,5 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Parser (Parser, Code(..), parseCode, parseTape) where
+module Parser
+  ( Parser
+  , Code(..)
+  , parseCode
+  , parseTape
+  ) where
 
 import           Parser.Internal
