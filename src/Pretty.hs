@@ -4,7 +4,6 @@ module Pretty
   ( Pretty(..)
   , wrap
   , prettyList
-  , prettyList'
   ) where
 
 import           Data.List (intercalate)
@@ -27,7 +26,3 @@ wrap c1 content c2 = c1 ++ pretty content ++ c2
 -- | Prettify all elements in a list and joins them with a space
 prettyList :: (Pretty a) => [a] -> String
 prettyList = unwords . map pretty
-
--- | Prettify all elements in a list and joins them with @sep@
-prettyList' :: Pretty a => String -> [a] -> String
-prettyList' sep = intercalate sep . map pretty
