@@ -88,9 +88,7 @@ withTape :: String -> Options -> IO Options
 withTape arg opts =
   case parse parseTape "" formattedArg of
     Right t -> return opts{ tape = Just t }
-    _ -> do
-      hPutStrLn stderr "Invalid tape provided"
-      exitFailure
+    _       -> hPutStrLn stderr "Invalid tape provided" >> exitFailure
   where
     formattedArg = T.concat ["(", T.pack arg, ")"]
 
@@ -100,7 +98,7 @@ withInteractiveModeOn opts = return opts{ interactive = True }
 -- | Prints the version
 printVersion :: a -> IO b
 printVersion = const $ do
-  hPutStrLn stderr "3.1.1"
+  hPutStrLn stderr "3.1.2"
   exitSuccess
 
 -- | Prints the usage
