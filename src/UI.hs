@@ -224,10 +224,10 @@ box width height title content =
 -- | The attributes map, that defines styles
 attributes :: AttrMap
 attributes = attrMap V.defAttr
-  [ (errorAttr, fg V.red `V.withStyle` V.bold)
-  , (finishedAttr, fg V.blue `V.withStyle` V.bold)
-  , (titleAttr, fg V.white `V.withStyle` V.bold)
-  , (blinkAttr, fg V.white `V.withStyle` V.blink)
+  [ (errorAttr,    fg V.red   `V.withStyle` V.bold)
+  , (finishedAttr, fg V.blue  `V.withStyle` V.bold)
+  , (titleAttr,    fg V.white `V.withStyle` V.bold)
+  , (blinkAttr,    fg V.white `V.withStyle` V.blink)
   ]
 
 errorAttr :: AttrName

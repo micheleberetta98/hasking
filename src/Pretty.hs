@@ -2,8 +2,6 @@
 
 module Pretty where
 
-import           Data.List (intercalate)
-
 -- | A typeclass to pretty-print stuff
 -- I made this because show string = "string" and I don't like those double quotes
 class Pretty a where

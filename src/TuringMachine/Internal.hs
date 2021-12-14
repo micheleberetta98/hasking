@@ -27,13 +27,13 @@ type Transitions s a = Map (From s a) (To s a)
 
 -- | The executable @TuringMachine@
 data TuringMachine s a = TuringMachine
-    { initial     :: State s
-    , finals      :: [State s]
-    , transitions :: Transitions s a
-    , current     :: State s
-    , status      :: Status
-    }
-    deriving (Show, Eq)
+  { initial     :: State s
+  , finals      :: [State s]
+  , transitions :: Transitions s a
+  , current     :: State s
+  , status      :: Status
+  }
+  deriving (Show, Eq)
 
 -- | A simple utility for rules
 type Rule s a = (State s, Symbol a, State s, Symbol a, Direction)
@@ -88,9 +88,9 @@ step tm t                                   =
 transition :: (Ord s, Ord a) => From s a -> Transitions s a -> Maybe (To s a)
 transition from ts = ts !? from
 
--- ------------------------------------------------
--- -- Utilities
--- ------------------------------------------------
+------------------------------------------------
+-- Utilities
+------------------------------------------------
 
 -- -- | Builds the transition Map from a list of @Rule@s
 buildTransitions :: [Rule String String] -> Transitions String String
