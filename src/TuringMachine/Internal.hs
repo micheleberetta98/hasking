@@ -86,7 +86,7 @@ step tm t                                   =
     Nothing -> Left (c, val)
     Just (s', out, dir) ->
       let tm' = tm{ current = s', status = if s' `elem` finals tm then Stopped else Running }
-      in Right (tm', updateTape dir out t)
+      in Right (tm', move dir $ write out t)
 
 -- | Lookups a single transition from a @Transitions s a@
 transition :: (Ord s, Ord a) => From s a -> Transitions s a -> Maybe (To s a)
@@ -101,8 +101,3 @@ buildTransitions :: [Rule String String] -> Transitions String String
 buildTransitions = M.fromList . map formatRule
   where
     formatRule (fromState, fromSymbol, toState, toSymbol, dir) = ((fromState, fromSymbol), (toState, toSymbol, dir))
-
--- | It updates a given tape by writing @value@ at the current position
--- and moving @dir@
-updateTape :: Direction -> Symbol a -> Tape a -> Tape a
-updateTape dir v = move dir . write v
