@@ -52,7 +52,7 @@ instance (Pretty s) => Pretty (State s) where
   pretty (State s) = pretty s
 
 ------------------------------------------------
--- Interface
+-- Construction
 ------------------------------------------------
 
 mkMachine :: State s -> [State s] -> Transitions s a -> TuringMachine s a
@@ -63,6 +63,10 @@ mkMachine from finalStates ts = TuringMachine
   , current = from
   , status = Running
   }
+
+------------------------------------------------
+-- Execution
+------------------------------------------------
 
 -- | Executes a @TuringMachine@ with the specified @Tape@
 -- It returns @Left (state, symbol)@ if it ends up in an undefined state, or the resulting @Right (TuringMachine, Tape)@

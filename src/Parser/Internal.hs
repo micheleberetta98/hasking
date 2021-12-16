@@ -5,11 +5,13 @@ module Parser.Internal where
 import           Data.Char
 import           Data.Text                  (Text)
 import           Data.Void
-import           Tape                       hiding (empty)
+import           Tape                       (Direction, Symbol, Tape)
+import qualified Tape                       as T
 import           Text.Megaparsec            hiding (State)
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import           TuringMachine.Internal
+import           TuringMachine.Internal     (Rule, State (State), TuringMachine,
+                                             buildTransitions, mkMachine)
 
 -----------------------------------------------
 -- Types
@@ -24,66 +26,70 @@ data Code = Code (TuringMachine String String) [Tape String]
 -----------------------------------------------
 
 -- | Parses the whole code
-parseCode :: Parser Code
-parseCode = sc *> (Code <$> parseMachine <*> many parseSimulate)
+code :: Parser Code
+code = sc *> (Code <$> machine <*> many simulateOn)
 
 -- | Parses the actual machine definition
-parseMachine :: Parser (TuringMachine String String)
-parseMachine = lexeme $ parens (symbol "machine" *> definition)
+machine :: Parser (TuringMachine String String)
+machine = lexeme $ def "machine" definition
   where
     definition = mkMachine
-      <$> lexeme initialState
-      <*> lexeme finalStates
-      <*> rules
-
-    initialState = parens $ symbol "initial" *> parseState
-    finalStates = parens $ symbol "finals" *> parens (many parseState)
-    rules = buildTransitions <$> parens (symbol "rules" *> parens (many parseRule))
+      <$> def "initial" state
+      <*> defs "finals" state
+      <*> (buildTransitions <$> defs "rules" rule)
 
 -- | Parses a single "rule" in the form @(state symbol state symbol direction)@
-parseRule :: Parser (Rule String String)
-parseRule = lexeme . parens $ (,,,,)
-  <$> (parseState <* sc)
-  <*> (parseSymbol <* sc)
-  <*> (parseState <* sc)
-  <*> (parseSymbol <* sc)
+rule :: Parser (Rule String String)
+rule = lexeme . parens $ (,,,,)
+  <$> state
+  <*> parseSymbol
+  <*> state
+  <*> parseSymbol
   <*> parseDirection
 
 -- | Parses a @simulate-on@ definition
-parseSimulate :: Parser (Tape String)
-parseSimulate = lexeme $ parens (symbol "simulate-on" *> parseTape)
+simulateOn :: Parser (Tape String)
+simulateOn = def "simulate-on" tape
 
 -- | Parses a state value
-parseState :: Parser (State String)
-parseState = State <$> lexeme identifier <?> "state"
+state :: Parser (State String)
+state = State <$> lexeme identifier <?> "state"
   where identifier = (:) <$> satisfy isAlpha <*> many (satisfy isAlphaNum)
 
 -- | Parses a tape
-parseTape :: Parser (Tape String)
-parseTape = Tape.fromList <$> parens (many parseSymbol) <?> "tape (symbols' list)"
+tape :: Parser (Tape String)
+tape = T.fromList <$> parens (many parseSymbol) <?> "tape (list of symbols)"
 
 -- | Parses a symbol
 parseSymbol :: Parser (Symbol String)
 parseSymbol = lexeme (blank <|> symbolValue) <?> "symbol"
   where
-    blank = Blank <$ string "."
-    symbolValue = Symbol <$> some (noneOf [' ', '(', ')', '[', ']', '{', '}', ';'])
+    blank = T.Blank <$ string "."
+    symbolValue = T.Symbol <$> some (noneOf [' ', '(', ')', '[', ']', '{', '}', ';'])
 
 -- | Parses a @Direction@
 parseDirection :: Parser Direction
 parseDirection = choice
-  [ R <$ symbol "R"
-  , L <$ symbol "L"
-  , S <$ symbol "S"
+  [ T.R <$ keyword "R"
+  , T.L <$ keyword "L"
+  , T.S <$ keyword "S"
   ] <?> "direction"
 
 -----------------------------------------------
 -- Utilities
 -----------------------------------------------
 
+-- | Little utility for a definition in the for @(keyword ...)@
+def :: Text -> Parser a -> Parser a
+def kw p = lexeme $ parens (keyword kw *> p)
+
+-- | Little utility for a definition of a list of some parser, i.e. in the for @(keyword (...))@
+defs :: Text -> Parser a -> Parser [a]
+defs kw p = lexeme $ parens (keyword kw *> parens (many p))
+
 -- | Wrapper for symbols, picks up all trailing white space
-symbol :: Text -> Parser Text
-symbol = L.symbol sc
+keyword :: Text -> Parser Text
+keyword = L.symbol sc
 
 -- | Wrapper for lexems, picks up all trailing white space
 lexeme :: Parser a -> Parser a
@@ -95,4 +101,4 @@ sc = L.space space1 (L.skipLineComment ";") empty
 
 -- | Wraps the parser @p@ in parentheses
 parens :: Parser a -> Parser a
-parens = between (symbol "(" ) (sc *> string ")")
+parens = between (char '(' <* sc) (sc *> char ')')
