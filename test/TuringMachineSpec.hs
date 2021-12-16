@@ -1,14 +1,14 @@
 module TuringMachineSpec where
 
 import qualified Data.Map               as M
+import           Pretty
 import           Tape
 import           Test.Hspec
 import           TuringMachine.Internal
 
 turingMachineTests :: SpecWith ()
 turingMachineTests = describe "Turing Machine" $ do
-  it "should build machines from code AST" $ do
-    let tm = TuringMachine
+  let tm = TuringMachine
                 (State "s")
                 [State "f"]
                 ( buildTransitions
@@ -19,7 +19,10 @@ turingMachineTests = describe "Turing Machine" $ do
                   ])
                 (State "s")
                 Running
-        tapes = [fromList [Symbol "0", Symbol "0"]]
+  let tape1 = fromList [Symbol "0", Symbol "0"]
+      tape2 = fromList [Symbol "1", Symbol "0"]
+
+  it "should build machines from code AST" $ do
     initial tm `shouldBe` State "s"
     finals tm `shouldBe` [State "f"]
     transitions tm `shouldBe` M.fromList
@@ -30,3 +33,7 @@ turingMachineTests = describe "Turing Machine" $ do
       ]
     current tm `shouldBe` initial tm
     status tm `shouldBe` Running
+
+  it "should execute the whole machine" $ do
+    pretty . snd <$> machine tm tape1 `shouldBe` Right "1 1"
+    machine tm tape2 `shouldBe` Left (State "s", Symbol "1")
