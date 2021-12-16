@@ -60,7 +60,7 @@ The file you pass to the machine contains the machine definition. There are some
 
 Given these, there are only 3 types of lines: state transitions, control instructions and the initial tape value.
 
-You can see a complete example in `example.txt`.
+You can see a complete example in `example.hsk`.
 
 The structure is as follows:
 ```
