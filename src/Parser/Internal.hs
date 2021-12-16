@@ -42,10 +42,10 @@ machine = lexeme $ def "machine" definition
 rule :: Parser (Rule String String)
 rule = lexeme . parens $ (,,,,)
   <$> state
-  <*> parseSymbol
+  <*> symbol
   <*> state
-  <*> parseSymbol
-  <*> parseDirection
+  <*> symbol
+  <*> direction
 
 -- | Parses a @simulate-on@ definition
 simulateOn :: Parser (Tape String)
@@ -58,18 +58,18 @@ state = State <$> lexeme identifier <?> "state"
 
 -- | Parses a tape
 tape :: Parser (Tape String)
-tape = T.fromList <$> parens (many parseSymbol) <?> "tape (list of symbols)"
+tape = T.fromList <$> parens (many symbol) <?> "tape (list of symbols)"
 
 -- | Parses a symbol
-parseSymbol :: Parser (Symbol String)
-parseSymbol = lexeme (blank <|> symbolValue) <?> "symbol"
+symbol :: Parser (Symbol String)
+symbol = lexeme (blank <|> symbolValue) <?> "symbol"
   where
     blank = T.Blank <$ string "."
     symbolValue = T.Symbol <$> some (noneOf [' ', '(', ')', '[', ']', '{', '}', ';'])
 
 -- | Parses a @Direction@
-parseDirection :: Parser Direction
-parseDirection = choice
+direction :: Parser Direction
+direction = choice
   [ T.R <$ keyword "R"
   , T.L <$ keyword "L"
   , T.S <$ keyword "S"
