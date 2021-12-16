@@ -80,11 +80,50 @@ parserTests = describe "Parser" $ do
                      (State "s")
                      [State "f"]
                      ( buildTransitions
-                        [ ((State "s"), (Symbol "0"), (State "s"), (Symbol "1"), R)
-                        , ((State "s"), Blank       , (State "x"), Blank       , L)
-                        , ((State "x"), (Symbol "1"), (State "x"), (Symbol "1"), L)
-                        , ((State "x"), Blank       , (State "f"), Blank       , R)
+                        [ (State "s", Symbol "0", State "s", Symbol "1", R)
+                        , (State "s", Blank     , State "x", Blank     , L)
+                        , (State "x", Symbol "1", State "x", Symbol "1", L)
+                        , (State "x", Blank     , State "f", Blank     , R)
                         ])
                       (State "s")
                       Running
     machine `over` def `shouldBe` Right expected
+
+  it "parses machine definitions regardless of the internal's order" $ do
+    let def = "(machine\n\
+              \ ; Ignoring comments\n\
+              \  (finals (f))\n\
+              \  (rules\n\
+              \    ((s 0 s 1 R)\n\
+              \     (s . x . L)\n\
+              \     (x 1 x 1 L)\n\
+              \     (x . f . R)))\n\
+              \ ; And this comment shall disappear\n\
+              \  (initial s)\n\
+              \)\n\
+              \"
+        expected = TuringMachine
+                     (State "s")
+                     [State "f"]
+                     ( buildTransitions
+                        [ (State "s", Symbol "0", State "s", Symbol "1", R)
+                        , (State "s", Blank     , State "x", Blank     , L)
+                        , (State "x", Symbol "1", State "x", Symbol "1", L)
+                        , (State "x", Blank     , State "f", Blank     , R)
+                        ])
+                      (State "s")
+                      Running
+    machine `over` def `shouldBe` Right expected
+
+  it "doesn't parse wrong definitions" $ do
+    let def = "(machine\n\
+              \  (rules\n\
+              \    ((s 0 s 1 R)\n\
+              \     (s . x . L)\n\
+              \     (x 1 x 1 L)\n\
+              \     (x . f . R)))\n\
+              \ ; And this comment shall disappear\n\
+              \  (initial s)\n\
+              \)\n\
+              \"
+    machine `over` def `shouldSatisfy` isLeft
