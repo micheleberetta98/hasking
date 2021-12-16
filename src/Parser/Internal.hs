@@ -2,16 +2,18 @@
 
 module Parser.Internal where
 
+import           Control.Applicative.Permutations
 import           Data.Char
-import           Data.Text                  (Text)
+import           Data.Text                        (Text)
 import           Data.Void
-import           Tape                       (Direction, Symbol, Tape)
-import qualified Tape                       as T
-import           Text.Megaparsec            hiding (State)
+import           Tape                             (Direction, Symbol, Tape)
+import qualified Tape                             as T
+import           Text.Megaparsec                  hiding (State)
 import           Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
-import           TuringMachine.Internal     (Rule, State (State), TuringMachine,
-                                             buildTransitions, mkMachine)
+import qualified Text.Megaparsec.Char.Lexer       as L
+import           TuringMachine.Internal           (Rule, State (State),
+                                                   TuringMachine,
+                                                   buildTransitions, mkMachine)
 
 -----------------------------------------------
 -- Types
@@ -27,27 +29,22 @@ data Code = Code (TuringMachine String String) [Tape String]
 
 -- | Parses the whole code
 code :: Parser Code
-code = sc *> (Code <$> machine <*> many simulateOn)
+code = Code
+  <$> (sc *> machine <?> "machine definition")
+  <*> many simulateOn <?> "list of simulations"
 
 -- | Parses the actual machine definition
 machine :: Parser (TuringMachine String String)
-machine = lexeme $ def "machine" definition
-  where
-    definition = mkMachine
-      <$> def "initial" state
-      <*> defs "finals" state
-      <*> (buildTransitions <$> defs "rules" rule)
+machine = def "machine" $ runPermutation $
+  mkMachine
+    <$> toPermutation (try $ def "initial" state)
+    <*> toPermutation (try $ defs "finals" state)
+    <*> toPermutation (buildTransitions <$> defs "rules" rule)
 
 -- | Parses a single "rule" in the form @(state symbol state symbol direction)@
 rule :: Parser (Rule String String)
-rule = lexeme . parens $ (,,,,)
-  <$> state
-  <*> symbol
-  <*> state
-  <*> symbol
-  <*> direction
+rule = lexeme . parens $ (,,,,) <$> state <*> symbol <*> state <*> symbol <*> direction
 
--- | Parses a @simulate-on@ definition
 simulateOn :: Parser (Tape String)
 simulateOn = def "simulate-on" tape
 

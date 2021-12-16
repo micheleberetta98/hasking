@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 701d9bb3f4d9f14fc1fd92f00bdbca3f8e00c834b3d40729bf41ff36921e09b7
+-- hash: 82ed5171291259c2d57b50cf5ecc466d7c18fc25a45b40643ebadf652f6811f1
 
 name:           hasking
 version:        3.1.2
@@ -42,6 +42,7 @@ library
     , brick
     , containers
     , megaparsec
+    , parser-combinators
     , text
     , vty
   default-language: Haskell2010
@@ -60,6 +61,7 @@ executable hasking-exe
     , containers
     , hasking
     , megaparsec
+    , parser-combinators
     , text
     , vty
   default-language: Haskell2010
@@ -82,6 +84,7 @@ test-suite hasking-test
     , hasking
     , hspec
     , megaparsec
+    , parser-combinators
     , text
     , vty
   default-language: Haskell2010
