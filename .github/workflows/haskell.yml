@@ -6,7 +6,8 @@ on:
       - master
 
 jobs:
-  build:
+  unit-test:
+    name: Unit Testing
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
