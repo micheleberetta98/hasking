@@ -15,9 +15,6 @@ jobs:
         ghc-version: '8.10.7'
         enable-stack: true
         stack-version: 'latest'
-
-    - name: Install dependencies
-      run: stack setup
     - name: Build
       run: stack build
     - name: Run tests
