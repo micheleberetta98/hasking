@@ -82,7 +82,7 @@ def kw p = lexeme $ parens (keyword kw *> p)
 
 -- | Little utility for a definition of a list of some parser, i.e. in the for @(keyword (...))@
 defs :: Text -> Parser a -> Parser [a]
-defs kw p = lexeme $ parens (keyword kw *> parens (many p))
+defs kw p = def kw (parens (many p))
 
 -- | Wrapper for symbols, picks up all trailing white space
 keyword :: Text -> Parser Text
