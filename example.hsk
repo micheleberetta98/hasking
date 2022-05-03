@@ -1,13 +1,13 @@
 ; This is a machine that transforms 0s into 1s
 
 (machine
-  (initial s)       ; The initial state
-  (finals (q))      ; The final states (here just 1)
-  (rules (
-    (s 0 s 1 R)     ; If you encounter 0, write 1 and repeat till
-    (s . x . L)     ; the end, i.e. when you find the Blank. Now switch direction,
-    (x 1 x 1 L)     ; and keep everything the same, until
-    (x . q . R))))  ; you get back to the beginning
+  initial s       ; The initial state
+  finals (q)      ; The final states (here just 1)
+  rules
+    ((s 0 s 1 R)     ; If you encounter 0, write 1 and repeat till
+     (s . x . L)     ; the end, i.e. when you find the Blank. Now switch direction,
+     (x 1 x 1 L)     ; and keep everything the same, until
+     (x . q . R)))   ; you get back to the beginning
 
 (simulate-on (0 0 0 0))
 (simulate-on (0 0 1 0))

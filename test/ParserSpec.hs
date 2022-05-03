@@ -68,13 +68,13 @@ parserTests = describe "Parser" $ do
   it "parses machine definitions" $ do
     let def = "(machine\n\
               \ ; Ignoring comments\n\
-              \  (initial s)\n\
-              \  (finals (f))\n\
-              \  (rules\n\
+              \  initial s\n\
+              \  finals (f)\n\
+              \  rules\n\
               \    ((s 0 s 1 R)\n\
               \     (s . x . L)\n\
               \     (x 1 x 1 L)\n\
-              \     (x . f . R))))\n\
+              \     (x . f . R)))\n\
               \"
         expected = TuringMachine
                      (State "s")
@@ -92,14 +92,14 @@ parserTests = describe "Parser" $ do
   it "parses machine definitions regardless of the internal's order" $ do
     let def = "(machine\n\
               \ ; Ignoring comments\n\
-              \  (finals (f))\n\
-              \  (rules\n\
+              \  finals (f)\n\
+              \  rules\n\
               \    ((s 0 s 1 R)\n\
               \     (s . x . L)\n\
               \     (x 1 x 1 L)\n\
-              \     (x . f . R)))\n\
+              \     (x . f . R))\n\
               \ ; And this comment shall disappear\n\
-              \  (initial s)\n\
+              \  initial s\n\
               \)\n\
               \"
         expected = TuringMachine
@@ -117,13 +117,13 @@ parserTests = describe "Parser" $ do
 
   it "doesn't parse wrong definitions" $ do
     let def = "(machine\n\
-              \  (rules\n\
+              \  rules\n\
               \    ((s 0 s 1 R)\n\
               \     (s . x . L)\n\
               \     (x 1 x 1 L)\n\
-              \     (x . f . R)))\n\
+              \     (x . f . R))\n\
               \ ; And this comment shall disappear\n\
-              \  (initial s)\n\
+              \  initial s\n\
               \)\n\
               \"
     machine `over` def `shouldSatisfy` isLeft

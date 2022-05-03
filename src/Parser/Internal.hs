@@ -37,9 +37,9 @@ code = Code
 machine :: Parser (TuringMachine String String)
 machine = def "machine" $ runPermutation $
   mkMachine
-    <$> toPermutation (try $ def "initial" state)
-    <*> toPermutation (try $ defs "finals" state)
-    <*> toPermutation (buildTransitions <$> defs "rules" rule)
+    <$> toPermutation (def' "initial" state)
+    <*> toPermutation (defs' "finals" state)
+    <*> toPermutation (buildTransitions <$> defs' "rules" rule)
 
 -- | Parses a single "rule" in the form @(state symbol state symbol direction)@
 rule :: Parser (Rule String String)
@@ -78,11 +78,19 @@ direction = choice
 
 -- | Little utility for a definition in the for @(keyword ...)@
 def :: Text -> Parser a -> Parser a
-def kw p = lexeme $ parens (keyword kw *> p)
+def kw p = parens (def' kw p)
 
 -- | Little utility for a definition of a list of some parser, i.e. in the for @(keyword (...))@
 defs :: Text -> Parser a -> Parser [a]
-defs kw p = def kw (parens (many p))
+defs kw p = parens (defs' kw p)
+
+-- | Like 'def' but without the parentheses
+def' :: Text -> Parser a -> Parser a
+def' kw p = lexeme (keyword kw *> p)
+
+-- | Like 'defs' but without the parentheses
+defs' :: Text -> Parser a -> Parser [a]
+defs' kw p = def' kw (parens (many p))
 
 -- | Wrapper for symbols, picks up all trailing white space
 keyword :: Text -> Parser Text
