@@ -85,8 +85,8 @@ parserTests = describe "Parser" $ do
                         , (State "x", Symbol "1", State "x", Symbol "1", L)
                         , (State "x", Blank     , State "f", Blank     , R)
                         ])
-                      (State "s")
-                      Running
+                    (State "s")
+                    Running
     definition `over` def `shouldBe` Right (Definition "zeros-to-one" expected)
 
   it "parses machine definitions regardless of the internal's order" $ do
@@ -111,8 +111,8 @@ parserTests = describe "Parser" $ do
                         , (State "x", Symbol "1", State "x", Symbol "1", L)
                         , (State "x", Blank     , State "f", Blank     , R)
                         ])
-                      (State "s")
-                      Running
+                    (State "s")
+                    Running
     definition `over` def `shouldBe` Right (Definition "zeros-to-one" expected)
 
   it "doesn't parse wrong definitions" $ do
@@ -127,3 +127,26 @@ parserTests = describe "Parser" $ do
               \)\n\
               \"
     definition `over` def `shouldSatisfy` isLeft
+
+  it "parses an entire code file" $ do
+    let contents1 = "\
+                   \(machine  m1 initial s finals (q) rules ((s 0 s 1 R)))\n\
+                   \(simulate m1 (0))\n\
+                   \(machine  m2 initial s finals (q) rules ((s 0 s 1 R)))\n\
+                   \(simulate m2 (1))\
+                   \"
+        contents2 = "; File description\n" <> contents1
+        expectedMachine = TuringMachine
+                     (State "s")
+                     [State "q"]
+                     (buildTransitions [(State "s", Symbol "0", State "s", Symbol "1", R)])
+                    (State "s")
+                    Running
+
+    (code `over` contents1) `shouldBe` Right
+                                        [ Definition "m1" expectedMachine
+                                        , Simulation "m1" (fromList [Symbol "0"])
+                                        , Definition "m2" expectedMachine
+                                        , Simulation "m2" (fromList [Symbol "1"])
+                                        ]
+    (code `over` contents1) `shouldBe` (code `over` contents2)

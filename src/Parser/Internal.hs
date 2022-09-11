@@ -36,10 +36,12 @@ type MachineName = String
 
 -- | Parses the whole code
 code :: Parser Code
-code = many $ choice
-  [ try definition <?> "machine definition"
-  , simulate <?> "machine simulation"
-  ]
+code = do
+  sc
+  lexeme $ many $ choice
+    [ try definition <?> "machine definition"
+    , simulate <?> "machine simulation"
+    ]
 
 -- | Parses the actual machine definition
 definition :: Parser Expression
@@ -92,11 +94,11 @@ machineName = lexeme $ some (noneOf [' ', '\n', '\t'])
 
 -- | Little utility for a definition in the for @(keyword ...)@
 def :: Text -> Parser a -> Parser a
-def kw p = parens (def' kw p)
+def kw p = lexeme $ parens (def' kw p)
 
 -- | Little utility for a definition of a list of some parser, i.e. in the for @(keyword (...))@
 defs :: Text -> Parser a -> Parser [a]
-defs kw p = parens (defs' kw p)
+defs kw p = lexeme $ parens (defs' kw p)
 
 -- | Like 'def' but without the parentheses
 def' :: Text -> Parser a -> Parser a
