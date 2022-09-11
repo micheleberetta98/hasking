@@ -9,7 +9,7 @@ import qualified Brick.Widgets.Center       as C
 import           Control.Monad.IO.Class     (MonadIO (liftIO))
 import           Data.Maybe                 (fromMaybe)
 import qualified Graphics.Vty               as V
-import           Parser                     (Code (..))
+import           Parser                     (Code, Expression (..))
 import           Pretty                     (Pretty (pretty))
 import           Tape                       (Direction, Symbol, Tape (..),
                                              toFixedList)
@@ -82,16 +82,16 @@ handleEvent s (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue (executeStep s)
 handleEvent s (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue (goBack s)
 handleEvent s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
 handleEvent s (VtyEvent (V.EvKey V.KEsc []))        = halt s
-handleEvent s (VtyEvent (V.EvKey (V.KChar 'r') [])) = do
-  Code m tapes <- liftIO (uiReload s)
-  case tapes of
-    []    -> continue s{ uiStatus = UIError "No tape found" }
-    (t:_) -> continue $ s
-      { machine = m
-      , currentTape = t
-      , uiPrevious = Nothing
-      , uiStatus = UIProcessing
-      }
+-- handleEvent s (VtyEvent (V.EvKey (V.KChar 'r') [])) = do
+--   Code m tapes <- liftIO (uiReload s)
+--   case tapes of
+--     []    -> continue s{ uiStatus = UIError "No tape found" }
+--     (t:_) -> continue $ s
+--       { machine = m
+--       , currentTape = t
+--       , uiPrevious = Nothing
+--       , uiStatus = UIProcessing
+--       }
 handleEvent s _                                     = continue s
 
 ------------------------------------------------

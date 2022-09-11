@@ -1,6 +1,7 @@
 module Parser
   ( Parser
-  , Code(..)
+  , Code
+  , Expression(..)
   , parseCode
   , parseTape
   ) where

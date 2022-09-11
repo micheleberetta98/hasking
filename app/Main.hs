@@ -23,11 +23,12 @@ main = do
   let (Options input output t interactive) = opts
       load = addTape t <$> loadMachine input
 
-  Code m tapes <- load
+  pure ()
+  -- Code m tapes <- load
 
-  if interactive
-    then void $ executeUI m tapes load
-    else output $ executeMachine m tapes
+  -- if interactive
+  --   then void $ executeUI m tapes load
+  --   else output $ executeMachine m tapes
 
 loadMachine :: IO Text -> IO Code
 loadMachine input = input >>= handleErrors . parse parseCode ""
@@ -44,9 +45,10 @@ executeMachine tm = T.pack . intercalate "\n" . map (format . machine tm)
     format (Left (state, symbol)) = concat ["(!) Invalid state reached: (", pretty state, ", ", pretty symbol, ")"]
     format (Right (_, t))         = pretty t
 
-addTape :: Maybe (Tape String) -> Code -> Code
-addTape Nothing c                       = c
-addTape (Just extraTape) (Code m tapes) = Code m (extraTape : tapes)
+addTape = undefined
+-- addTape :: Maybe (Tape String) -> Code -> Code
+-- addTape Nothing c                       = c
+-- addTape (Just extraTape) (Code m tapes) = Code m (extraTape : tapes)
 
 handleErrors :: Either (ParseErrorBundle Text Void) Code -> IO Code
 handleErrors (Left errors) = hPutStrLn stderr (errorBundlePretty errors) >> exitFailure

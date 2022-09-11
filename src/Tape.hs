@@ -26,7 +26,7 @@ data Tape a = Cell
   { value :: Symbol a
   , left  :: Tape a
   , right :: Tape a }
-  deriving (Show, Eq)
+  deriving (Eq)
 
 -- | Represents movement (@L@ = left, @R@ = right, @S@ = stay)
 data Direction = L | R | S
@@ -52,6 +52,8 @@ instance (Pretty a) => Pretty (Tape a) where
 instance Pretty Direction where
   pretty = show
 
+instance (Show a, Pretty a) => Show (Tape a) where
+  show = pretty
 
 -----------------------------------------------
 -- Tape conversions

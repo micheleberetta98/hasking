@@ -21,7 +21,14 @@ import           TuringMachine.Internal           (Rule, State (State),
 
 type Parser = Parsec Void Text
 
-data Code = Code (TuringMachine String String) [Tape String]
+type Code = [Expression]
+
+data Expression =
+  Definition MachineName (TuringMachine String String)
+  | Simulation MachineName (Tape String)
+  deriving (Show, Eq)
+
+type MachineName = String
 
 -----------------------------------------------
 -- Interface
@@ -29,24 +36,28 @@ data Code = Code (TuringMachine String String) [Tape String]
 
 -- | Parses the whole code
 code :: Parser Code
-code = Code
-  <$> (sc *> machine <?> "machine definition")
-  <*> many simulateOn <?> "list of simulations"
+code = many $ choice
+  [ try definition <?> "machine definition"
+  , simulate <?> "machine simulation"
+  ]
 
 -- | Parses the actual machine definition
-machine :: Parser (TuringMachine String String)
-machine = def "machine" $ runPermutation $
-  mkMachine
-    <$> toPermutation (def' "initial" state)
-    <*> toPermutation (defs' "finals" state)
-    <*> toPermutation (buildTransitions <$> defs' "rules" rule)
+definition :: Parser Expression
+definition = def "machine" (Definition <$> machineName <*> machine)
+  where
+    machine = runPermutation $
+      mkMachine
+        <$> toPermutation (def' "initial" state)
+        <*> toPermutation (defs' "finals" state)
+        <*> toPermutation (buildTransitions <$> defs' "rules" rule)
 
 -- | Parses a single "rule" in the form @(state symbol state symbol direction)@
 rule :: Parser (Rule String String)
 rule = lexeme . parens $ (,,,,) <$> state <*> symbol <*> state <*> symbol <*> direction
 
-simulateOn :: Parser (Tape String)
-simulateOn = def "simulate-on" tape
+-- | Parses a simulation of a machine on a tape
+simulate :: Parser Expression
+simulate = def "simulate" (Simulation <$> machineName <*> tape)
 
 -- | Parses a state value
 state :: Parser (State String)
@@ -75,6 +86,9 @@ direction = choice
 -----------------------------------------------
 -- Utilities
 -----------------------------------------------
+
+machineName :: Parser String
+machineName = lexeme $ some (anySingleBut ' ')
 
 -- | Little utility for a definition in the for @(keyword ...)@
 def :: Text -> Parser a -> Parser a
