@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 71bef082722814c40e74c3fee8f7755fe83e5c0115366d038be3635da301d00b
+-- hash: 6b04d3685ceb3d6c9d7b130161a7dd5d863f29244927ed3627aff2a6f92b6a83
 
 name:           hasking
 version:        3.2.0
@@ -54,7 +54,7 @@ executable hasking-exe
       Paths_hasking
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -O2
   build-depends:
       base >=4.7 && <5
     , brick

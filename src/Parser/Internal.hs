@@ -88,7 +88,7 @@ direction = choice
 -----------------------------------------------
 
 machineName :: Parser String
-machineName = lexeme $ some (anySingleBut ' ')
+machineName = lexeme $ some (noneOf [' ', '\n', '\t'])
 
 -- | Little utility for a definition in the for @(keyword ...)@
 def :: Text -> Parser a -> Parser a

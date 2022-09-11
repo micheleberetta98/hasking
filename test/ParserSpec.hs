@@ -53,10 +53,10 @@ parserTests = describe "Parser" $ do
     state `over` "1a" `shouldSatisfy` isLeft
 
   it "parses simulations (i.e. tapes)" $ do
-    pretty <$> (simulateOn `over` "(simulate-on (0 1 r #))") `shouldBe` Right "0 1 r #"
-    simulateOn `over` "(simulate-on 0 1 r #)" `shouldSatisfy` isLeft
-    simulateOn `over` "(simulateon (0 1 r #))" `shouldSatisfy` isLeft
-    simulateOn `over` "(simulateon ([ ]))" `shouldSatisfy` isLeft
+    simulate `over` "(simulate machine (0 1 r #))" `shouldBe` Right (Simulation "machine" (fromList [Symbol "0", Symbol "1", Symbol "r", Symbol "#"]))
+    simulate `over` "(simulate machine 0 1 r #)" `shouldSatisfy` isLeft
+    simulate `over` "(simulate (0 1 r #))" `shouldSatisfy` isLeft
+    simulate `over` "(simulate ([ ]))" `shouldSatisfy` isLeft
 
   it "parses rules" $ do
     rule `over` "(s  0 s  1 R)" `shouldBe` Right (State "s",  Symbol "0", State "s",  Symbol "1", R)
@@ -66,7 +66,7 @@ parserTests = describe "Parser" $ do
     rule `over` "(0 0 0 0 S)" `shouldSatisfy` isLeft
 
   it "parses machine definitions" $ do
-    let def = "(machine\n\
+    let def = "(machine zeros-to-one\n\
               \ ; Ignoring comments\n\
               \  initial s\n\
               \  finals (f)\n\
@@ -87,10 +87,10 @@ parserTests = describe "Parser" $ do
                         ])
                       (State "s")
                       Running
-    machine `over` def `shouldBe` Right expected
+    definition `over` def `shouldBe` Right (Definition "zeros-to-one" expected)
 
   it "parses machine definitions regardless of the internal's order" $ do
-    let def = "(machine\n\
+    let def = "(machine zeros-to-one\n\
               \ ; Ignoring comments\n\
               \  finals (f)\n\
               \  rules\n\
@@ -113,10 +113,10 @@ parserTests = describe "Parser" $ do
                         ])
                       (State "s")
                       Running
-    machine `over` def `shouldBe` Right expected
+    definition `over` def `shouldBe` Right (Definition "zeros-to-one" expected)
 
   it "doesn't parse wrong definitions" $ do
-    let def = "(machine\n\
+    let def = "(machine wrong\n\
               \  rules\n\
               \    ((s 0 s 1 R)\n\
               \     (s . x . L)\n\
@@ -126,4 +126,4 @@ parserTests = describe "Parser" $ do
               \  initial s\n\
               \)\n\
               \"
-    machine `over` def `shouldSatisfy` isLeft
+    definition `over` def `shouldSatisfy` isLeft

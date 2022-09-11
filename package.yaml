@@ -39,7 +39,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -Wall
-    - -Werror
+    # - -Werror
     - -O2
     dependencies:
     - hasking
