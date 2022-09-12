@@ -47,7 +47,7 @@ instance (Ord s) => Ord (Symbol s) where
   compare (Symbol s1) (Symbol s2) = compare s1 s2
 
 instance (Pretty a) => Pretty (Tape a) where
-  pretty = pretty . toList
+  pretty t = "(" <> pretty (toList t) <> ")"
 
 instance Pretty Direction where
   pretty = show

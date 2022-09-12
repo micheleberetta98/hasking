@@ -15,3 +15,6 @@ instance {-# OVERlAPS #-} Pretty a => Pretty [a] where
 
 instance Pretty Int where
   pretty = show
+
+instance (Pretty a, Pretty b) => Pretty (a, b) where
+  pretty (a, b) = "(" <> pretty a <> ", " <> pretty b <> ")"

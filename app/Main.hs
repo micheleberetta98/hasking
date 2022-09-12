@@ -1,54 +1,31 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Main (main) where
 
-import           Control.Monad   (void)
-import           Data.List       (intercalate)
+import           Code
+import           Data.List
 import           Data.Text       (Text)
-import qualified Data.Text       as T
-import           Data.Void       (Void)
-import           Opts            (Options (Options), getOpts)
-import           Parser          (Code (..), parseCode)
-import           Pretty          (Pretty (pretty))
-import           System.Exit     (exitFailure)
-import           System.IO       (hPutStrLn, stderr)
-import           Tape            (Tape)
-import           Text.Megaparsec (ParseErrorBundle, errorBundlePretty, parse)
-import           TuringMachine   (TuringMachine, machine)
-import           UI              (runUiWith)
-
-type TM = TuringMachine String String
+import qualified Data.Text.IO    as T
+import           Data.Void
+import           Opts
+import           Parser
+import           Pretty
+import           System.Exit
+import           System.IO
+import           Text.Megaparsec
+-- import           UI
 
 main :: IO ()
-main = do
-  opts <- getOpts
-  let (Options input output t interactive) = opts
-      load = addTape t <$> loadMachine input
+main = getOpts >>= \case
+  ShowVersion       -> hPutStrLn stderr "3.2.0" >> exitSuccess
+  Options Run input -> do
+    code <- readInput input >>= handleErrors . parse parseCode ""
+    putStrLn $ intercalate "\n" $ map pretty $ execute code
+  _ -> pure ()
 
-  pure ()
-  -- Code m tapes <- load
-
-  -- if interactive
-  --   then void $ executeUI m tapes load
-  --   else output $ executeMachine m tapes
-
-loadMachine :: IO Text -> IO Code
-loadMachine input = input >>= handleErrors . parse parseCode ""
-
-executeUI :: TM -> [Tape String] -> IO Code -> IO ()
-executeUI _ [] _ = do
-  hPutStrLn stderr "Please specify a tape manually when running in interactive mode"
-  void exitFailure
-executeUI m (t:_) load = void $ runUiWith m t load
-
-executeMachine :: TM -> [Tape String] -> Text
-executeMachine tm = T.pack . intercalate "\n" . map (format . machine tm)
-  where
-    format (Left (state, symbol)) = concat ["(!) Invalid state reached: (", pretty state, ", ", pretty symbol, ")"]
-    format (Right (_, t))         = pretty t
-
-addTape = undefined
--- addTape :: Maybe (Tape String) -> Code -> Code
--- addTape Nothing c                       = c
--- addTape (Just extraTape) (Code m tapes) = Code m (extraTape : tapes)
+readInput :: FileInput -> IO Text
+readInput StdIn       = T.getContents
+readInput (File path) = T.readFile path
 
 handleErrors :: Either (ParseErrorBundle Text Void) Code -> IO Code
 handleErrors (Left errors) = hPutStrLn stderr (errorBundlePretty errors) >> exitFailure

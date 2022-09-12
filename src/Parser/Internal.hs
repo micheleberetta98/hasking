@@ -2,6 +2,7 @@
 
 module Parser.Internal where
 
+import           Code
 import           Control.Applicative.Permutations
 import           Data.Char
 import           Data.Text                        (Text)
@@ -20,15 +21,6 @@ import           TuringMachine.Internal           (Rule, State (State),
 -----------------------------------------------
 
 type Parser = Parsec Void Text
-
-type Code = [Expression]
-
-data Expression =
-  Definition MachineName (TuringMachine String String)
-  | Simulation MachineName (Tape String)
-  deriving (Show, Eq)
-
-type MachineName = String
 
 -----------------------------------------------
 -- Interface

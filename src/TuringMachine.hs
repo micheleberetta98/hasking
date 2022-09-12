@@ -4,7 +4,7 @@ module TuringMachine
   , State
   , From
   , To
-  , machine
+  , runMachine
   , step
   , transition
   )

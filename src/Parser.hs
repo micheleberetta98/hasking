@@ -1,11 +1,10 @@
 module Parser
   ( Parser
-  , Code
-  , Expression(..)
   , parseCode
   , parseTape
   ) where
 
+import           Code            (Code)
 import           Parser.Internal
 import           Tape            (Tape)
 

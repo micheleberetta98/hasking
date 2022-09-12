@@ -70,10 +70,10 @@ mkMachine from finalStates ts = TuringMachine
 
 -- | Executes a @TuringMachine@ with the specified @Tape@
 -- It returns @Left (state, symbol)@ if it ends up in an undefined state, or the resulting @Right (TuringMachine, Tape)@
-machine :: (Ord s, Ord a) => TuringMachine s a -> Tape a -> Either (From s a) (TuringMachine s a, Tape a)
-machine tm t
+runMachine :: (Ord s, Ord a) => TuringMachine s a -> Tape a -> Either (From s a) (TuringMachine s a, Tape a)
+runMachine tm t
   | status tm == Stopped = Right (tm, t)
-  | otherwise            = step tm t >>= uncurry machine
+  | otherwise            = step tm t >>= uncurry runMachine
 
 -- | Given a particular @TuringMachine@, it runs a transition giving maybe a new @(TuringMachine, Tape)@
 -- If the transition has not been defined, it returns @Left (From s a)@

@@ -6,10 +6,10 @@ import           Brick                      hiding (Direction)
 import qualified Brick.Widgets.Border       as B
 import qualified Brick.Widgets.Border.Style as BS
 import qualified Brick.Widgets.Center       as C
+import           Code                       (Code, Expression (..))
 import           Control.Monad.IO.Class     (MonadIO (liftIO))
 import           Data.Maybe                 (fromMaybe)
 import qualified Graphics.Vty               as V
-import           Parser                     (Code, Expression (..))
 import           Pretty                     (Pretty (pretty))
 import           Tape                       (Direction, Symbol, Tape (..),
                                              toFixedList)
