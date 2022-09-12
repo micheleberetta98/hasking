@@ -35,5 +35,5 @@ turingMachineTests = describe "Turing Machine" $ do
     status tm `shouldBe` Running
 
   it "should execute the whole machine" $ do
-    pretty . snd <$> machine tm tape1 `shouldBe` Right "1 1"
-    machine tm tape2 `shouldBe` Left (State "s", Symbol "1")
+    pretty . snd <$> runMachine tm tape1 `shouldBe` Right "(1 1)"
+    runMachine tm tape2 `shouldBe` Left (State "s", Symbol "1")
