@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0e16775f5940ee24dc0413e3a677d4afe1e736c4b76578283a839569bf38fbe8
+-- hash: 693c8fe785df9f38176b2bf7b8dd0f2204a44357f45163bb9371c64a2367cf83
 
 name:           hasking
 version:        3.2.0
@@ -27,6 +27,7 @@ source-repository head
 library
   exposed-modules:
       Code
+      Code.Internal
       Parser
       Parser.Internal
       Pretty

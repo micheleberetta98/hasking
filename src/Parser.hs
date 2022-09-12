@@ -5,11 +5,14 @@ module Parser
   ) where
 
 import           Code            (Code)
+import           Data.Text       (Text)
+import           Data.Void       (Void)
 import           Parser.Internal
 import           Tape            (Tape)
+import           Text.Megaparsec
 
-parseCode :: Parser Code
-parseCode = code
+parseCode :: Text -> Either (ParseErrorBundle Text Data.Void.Void) Code
+parseCode = parse code ""
 
-parseTape :: Parser (Tape String)
-parseTape = tape
+parseTape :: Text -> Either (ParseErrorBundle Text Void) (Tape String)
+parseTape = parse tape ""

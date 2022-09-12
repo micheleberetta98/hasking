@@ -1,8 +1,8 @@
 import           Test.Hspec
 
-import           ParserSpec        (parserTests)
-import           TapeSpec          (tapeTests)
-import           TuringMachineSpec (turingMachineTests)
+import           ParserSpec
+import           TapeSpec
+import           TuringMachineSpec
 
 main :: IO ()
 main = hspec $ do

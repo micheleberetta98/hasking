@@ -11,7 +11,7 @@ import qualified Data.Text           as T
 import           Options.Applicative
 import           Parser              (parseTape)
 import           Tape                (Tape)
-import           Text.Megaparsec     (parseMaybe)
+
 ------------------------------------------------
 -- Data types
 ------------------------------------------------
@@ -83,8 +83,8 @@ pSimCommand = Simulate
       <> metavar "TAPE"
       <> help "The tape to use for the simulation")
   where
-    tapeReader = eitherReader (toEither . parseMaybe parseTape . T.pack)
-    toEither (Just t) = Right t
+    tapeReader = eitherReader (toEither . parseTape . T.pack)
+    toEither (Right t) = Right t
     toEither _        = Left "Invalid tape provided, must be in the form (a b c ...)"
 
 title :: String

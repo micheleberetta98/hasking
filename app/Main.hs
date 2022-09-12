@@ -19,7 +19,7 @@ main :: IO ()
 main = getOpts >>= \case
   ShowVersion       -> hPutStrLn stderr "3.2.0" >> exitSuccess
   Options Run input -> do
-    code <- readInput input >>= handleErrors . parse parseCode ""
+    code <- readInput input >>= handleErrors . parseCode
     putStrLn $ intercalate "\n" $ map pretty $ execute code
   _ -> pure ()
 
