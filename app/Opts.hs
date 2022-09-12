@@ -1,111 +1,91 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Opts (Options(Options), getOpts) where
+module Opts
+  ( Options(..)
+  , Command(..)
+  , FileInput(..)
+  , getOpts
+  ) where
 
-import           Data.List             (foldl')
-import           Data.Text             (Text)
-import qualified Data.Text             as T
-import qualified Data.Text.IO          as TIO
-import           Parser                (parseTape)
-import           System.Console.GetOpt (ArgDescr (NoArg, ReqArg),
-                                        ArgOrder (RequireOrder), OptDescr (..),
-                                        getOpt, usageInfo)
-import           System.Environment    (getArgs)
-import           System.Exit           (exitFailure, exitSuccess)
-import           System.IO             (hPutStrLn, stderr)
-import           Tape                  (Tape)
-import           Text.Megaparsec       (parse)
-
+import qualified Data.Text           as T
+import           Options.Applicative
+import           Parser              (parseTape)
+import           Tape                (Tape)
+import           Text.Megaparsec     (parseMaybe)
 ------------------------------------------------
 -- Data types
 ------------------------------------------------
 
 -- | The command line options
-data Options = Options
-  { input       :: IO Text
-  , output      :: Text -> IO ()
-  , tape        :: Maybe (Tape String)
-  , interactive :: Bool
-  }
+data Options
+  = ShowVersion
+  | Options
+    { optCommand :: Command
+    , optInput   :: FileInput
+    }
+  deriving (Show)
+
+data Command
+  = Run
+  | Simulate
+    { simMachineName :: String
+    , simTape        :: Tape String
+    }
+  deriving (Show)
+
+data FileInput = StdIn | File FilePath
+  deriving (Show)
 
 ------------------------------------------------
--- Options building
+-- Interface
 ------------------------------------------------
 
--- | Parses the options from the cli
 getOpts :: IO Options
-getOpts = do
-  args <- getArgs
-  let (actions, _, _) = getOpt RequireOrder options args
-  foldl' (>>=) (return defaultOpts) actions
-
-------------------------------------------------
--- Options definition
-------------------------------------------------
-
--- | The default options
-defaultOpts :: Options
-defaultOpts = Options
-  { input = TIO.getContents
-  , output = TIO.putStrLn
-  , tape = Nothing
-  , interactive = False
-  }
-
--- | The options description
-options :: [OptDescr (Options -> IO Options)]
-options =
-    [ Option "s" ["script"]
-        (ReqArg withInput "FILE")
-        "The file containing the machine specification (default: stdin)"
-    , Option "o" ["output"]
-        (ReqArg withOutput "FILE")
-        "The output file (default: stdout)"
-    , Option "t" ["tape"]
-        (ReqArg withTape "TAPE")
-        "The initial tape in the format \"Symbol Symbol ...\""
-    , Option "i" ["interactive"]
-        (NoArg withInteractiveModeOn)
-        "Run in interactive mode"
-    , Option "v" ["version"]
-        (NoArg printVersion)
-        "Print the program version"
-    , Option "h" ["help"]
-        (NoArg help)
-        "Show this help page"
-    ]
-
--- | Sets the input option
-withInput :: Monad m => FilePath -> Options -> m Options
-withInput arg opts = return opts{ input = TIO.readFile arg }
-
--- | Sets the output option
-withOutput :: Monad m => FilePath -> Options -> m Options
-withOutput arg opts = return opts{ output = TIO.writeFile arg }
-
--- | Sets the initial tape option
-withTape :: String -> Options -> IO Options
-withTape arg opts =
-  case parse parseTape "" formattedArg of
-    Right t -> return opts{ tape = Just t }
-    _       -> hPutStrLn stderr "Invalid tape provided" >> exitFailure
+getOpts = execParser opts
   where
-    formattedArg = T.concat ["(", T.pack arg, ")"]
+    opts = info ((pVersion <|> pOpts) <**> helper)
+           (  fullDesc
+           <> progDesc "A Turing Machine Interpreter written in Haskell"
+           <> header "HASKING")
 
-withInteractiveModeOn :: Monad m => Options -> m Options
-withInteractiveModeOn opts = return opts{ interactive = True }
+------------------------------------------------
+-- Options parsers
+------------------------------------------------
 
--- | Prints the version
-printVersion :: a -> IO b
-printVersion = const $ do
-  hPutStrLn stderr "3.2.0"
-  exitSuccess
+pVersion :: Parser Options
+pVersion = ShowVersion <$ flag' ShowVersion (long "version" <> short 'v' <> help "Show the version")
 
--- | Prints the usage
-help :: a -> IO b
-help _ = do
-    hPutStrLn stderr $ usageInfo title options
-    exitSuccess
+-- | Parses the options
+pOpts :: Parser Options
+pOpts = Options
+  <$> pCommand
+  <*> (   flag' StdIn (long "stdin" <> help "Read from standard input")
+      <|> (File <$> argument str (metavar "INPUT" <> help "The input Hasking file")))
+
+-- | Subcommand parser
+pCommand :: Parser Command
+pCommand = hsubparser
+  (  command "run" (info (pure Run) (progDesc "Execute Hasking source code"))
+  <> command "sim" (info pSimCommand (progDesc "Simulate the execution of a machine"))
+  )
+
+-- | The simulate command
+pSimCommand :: Parser Command
+pSimCommand = Simulate
+  <$> strOption
+      (  long "machine"
+      <> short 'm'
+      <> metavar "MACHINE"
+      <> help "The machine to be simulated")
+  <*> option tapeReader
+      (  long "tape"
+      <> short 't'
+      <> metavar "TAPE"
+      <> help "The tape to use for the simulation")
+  where
+    tapeReader = eitherReader (toEither . parseMaybe parseTape . T.pack)
+    toEither (Just t) = Right t
+    toEither _        = Left "Invalid tape provided, must be in the form (a b c ...)"
 
 title :: String
 title = unlines

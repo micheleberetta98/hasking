@@ -26,6 +26,8 @@ dependencies:
 - parser-combinators
 - text
 - vty
+- optparse-applicative
+- mtl
 
 library:
   source-dirs: src

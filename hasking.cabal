@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6b04d3685ceb3d6c9d7b130161a7dd5d863f29244927ed3627aff2a6f92b6a83
+-- hash: 0e16775f5940ee24dc0413e3a677d4afe1e736c4b76578283a839569bf38fbe8
 
 name:           hasking
 version:        3.2.0
@@ -26,6 +26,7 @@ source-repository head
 
 library
   exposed-modules:
+      Code
       Parser
       Parser.Internal
       Pretty
@@ -42,6 +43,8 @@ library
     , brick
     , containers
     , megaparsec
+    , mtl
+    , optparse-applicative
     , parser-combinators
     , text
     , vty
@@ -61,6 +64,8 @@ executable hasking-exe
     , containers
     , hasking
     , megaparsec
+    , mtl
+    , optparse-applicative
     , parser-combinators
     , text
     , vty
@@ -84,6 +89,8 @@ test-suite hasking-test
     , hasking
     , hspec
     , megaparsec
+    , mtl
+    , optparse-applicative
     , parser-combinators
     , text
     , vty
