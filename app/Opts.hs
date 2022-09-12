@@ -7,10 +7,11 @@ module Opts
   , getOpts
   ) where
 
-import qualified Data.Text           as T
+import qualified Data.Text                as T
 import           Options.Applicative
-import           Parser              (parseTape)
-import           Tape                (Tape)
+import           Options.Applicative.Help hiding (fullDesc)
+import           Parser                   (parseTape)
+import           Tape                     (Tape)
 
 ------------------------------------------------
 -- Data types
@@ -41,12 +42,10 @@ data FileInput = StdIn | File FilePath
 ------------------------------------------------
 
 getOpts :: IO Options
-getOpts = execParser opts
-  where
-    opts = info ((pVersion <|> pOpts) <**> helper)
-           (  fullDesc
-           <> progDesc "A Turing Machine Interpreter written in Haskell"
-           <> header "HASKING")
+getOpts = execParser $
+  info
+    ((pVersion <|> pOpts) <**> helper)
+    (fullDesc <> headerDoc title)
 
 ------------------------------------------------
 -- Options parsers
@@ -87,8 +86,8 @@ pSimCommand = Simulate
     toEither (Right t) = Right t
     toEither _        = Left "Invalid tape provided, must be in the form (a b c ...)"
 
-title :: String
-title = unlines
+title :: Maybe Doc
+title = Just $ string $ unlines
   [ "        __ __         __    _          "
   , "       / // /__  ___ / /__ (_)__  ___ _"
   , "      / _  / _ `(_-</  '_// / _ \\/ _ `/"
