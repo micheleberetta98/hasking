@@ -1,6 +1,6 @@
 ; This is a machine that transforms 0s into 1s
 
-(machine zeros-to-one
+(machine zeros-to-ones
   initial s       ; The initial state
   finals (q)      ; The final states (here just 1)
   rules
@@ -9,5 +9,5 @@
      (x 1 x 1 L)     ; and keep everything the same, until
      (x . q . R)))   ; you get back to the beginning
 
-(simulate zeros-to-one (0 0 0 0))
-(simulate zeros-to-one (0 0 1 0))
+(simulate zeros-to-ones (0 0 0 0))
+(simulate zeros-to-ones (0 0 1 0))

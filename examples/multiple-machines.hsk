@@ -1,0 +1,21 @@
+(machine zeros-to-ones
+  initial s
+  finals (q)
+  rules
+    ((s 0 s 1 R)
+     (s . x . L)
+     (x 1 x 1 L)
+     (x . q . R)))
+
+(simulate zeros-to-ones (0 0 0 0))
+
+(machine ones-to-zeros
+  initial s
+  finals (q)
+  rules
+    ((s 1 s 0 R)
+     (s . x . L)
+     (x 0 x 0 L)
+     (x . q . R)))
+
+(simulate ones-to-zeros (1 1))
