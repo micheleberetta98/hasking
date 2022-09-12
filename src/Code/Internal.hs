@@ -16,8 +16,8 @@ import qualified TuringMachine       as TM
 type Code = [Expression]
 
 data Expression
-  = Definition MachineName (TuringMachine String String)
-  | Simulation MachineName (Tape String)
+  = Definition { defName :: MachineName, defMachine :: TuringMachine String String }
+  | Simulation { simName :: MachineName, simTape :: Tape String }
   deriving (Show, Eq)
 
 type MachineName = String
@@ -51,6 +51,17 @@ executeMachine name tape (Just m) = toCodeOutput (TM.runMachine m tape)
   where
     toCodeOutput (Left s)           = InvalidState name s
     toCodeOutput (Right (_, tape')) = TapeResult name tape tape'
+
+-----------------------------------------------
+-- Utilities
+-----------------------------------------------
+
+getDef :: MachineName -> Code -> Maybe (TuringMachine String String)
+getDef name code = defMachine <$> find (isDefinitionOf name) code
+
+isDefinitionOf :: MachineName -> Expression -> Bool
+isDefinitionOf name (Definition machine _) = name == machine
+isDefinitionOf _ _                         = False
 
 -----------------------------------------------
 -- Instances

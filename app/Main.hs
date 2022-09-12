@@ -3,6 +3,7 @@
 module Main (main) where
 
 import           Code
+import           Control.Monad   (void)
 import           Data.List
 import           Data.Text       (Text)
 import qualified Data.Text.IO    as T
@@ -13,7 +14,7 @@ import           Pretty
 import           System.Exit
 import           System.IO
 import           Text.Megaparsec
--- import           UI
+import           UI
 
 main :: IO ()
 main = getOpts >>= \case
@@ -21,8 +22,10 @@ main = getOpts >>= \case
   Options cmd input -> readInput input >>= handleErrors . parseCode >>= executeCommand cmd
 
 executeCommand :: Command -> Code -> IO ()
-executeCommand Run code = putStrLn $ intercalate "\n" $ map pretty $ execute code
-executeCommand _ _      = hPutStrLn stderr "Not yet supported" >> exitFailure
+executeCommand Run code                  = putStrLn $ intercalate "\n" $ map pretty $ execute code
+executeCommand (Simulate name tape) code = case getDef name code of
+    Nothing      -> hPutStrLn stderr "Machine not found" >> exitFailure
+    Just machine -> void $ runUiWith machine tape
 
 readInput :: FileInput -> IO Text
 readInput StdIn       = T.getContents

@@ -21,7 +21,7 @@ import           TuringMachine              hiding (machine)
 
 type TM = TuringMachine String String
 
-data UIStatus = UIProcessing | UIFinished | UIError String
+data UIStatus = Processing | Finished | Error String
   deriving (Show, Eq)
 
 data UIState = UIState
@@ -29,7 +29,6 @@ data UIState = UIState
   , currentTape :: Tape String
   , uiPrevious  :: Maybe UIState
   , uiStatus    :: UIStatus
-  , uiReload    :: IO Code
   }
 
 type CustomEvent = ()
@@ -51,15 +50,14 @@ instance Pretty a => Pretty (Visualized a) where
 ------------------------------------------------
 
 -- | Functions that runs the app with some defaults
-runUiWith :: TM -> Tape String -> IO Code -> IO UIState
-runUiWith m t load = do
+runUiWith :: TM -> Tape String -> IO UIState
+runUiWith m t = do
   defaultMain app $
     UIState
       { machine = m
       , currentTape = t
       , uiPrevious = Nothing
-      , uiStatus = UIProcessing
-      , uiReload = load
+      , uiStatus = Processing
       }
 
 -- | The app definition
@@ -82,16 +80,6 @@ handleEvent s (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue (executeStep s)
 handleEvent s (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue (goBack s)
 handleEvent s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
 handleEvent s (VtyEvent (V.EvKey V.KEsc []))        = halt s
--- handleEvent s (VtyEvent (V.EvKey (V.KChar 'r') [])) = do
---   Code m tapes <- liftIO (uiReload s)
---   case tapes of
---     []    -> continue s{ uiStatus = UIError "No tape found" }
---     (t:_) -> continue $ s
---       { machine = m
---       , currentTape = t
---       , uiPrevious = Nothing
---       , uiStatus = UIProcessing
---       }
 handleEvent s _                                     = continue s
 
 ------------------------------------------------
@@ -100,18 +88,18 @@ handleEvent s _                                     = continue s
 
 -- | Executes a single step forward if the machine hasn't UIfinished
 executeStep :: UIState -> UIState
-executeStep s@(UIState m t _ UIProcessing _) = updateUiState s (step m t)
-executeStep s                                = s
+executeStep s@(UIState m t _ Processing) = updateUiState s (step m t)
+executeStep s                            = s
 
 -- | Updates the UI state based on the result of a single @step@
 updateUiState :: UIState -> Either (From String String) (TM, Tape String) -> UIState
-updateUiState state (Left _)       = state{ uiStatus = UIError "Invalid state reached" }
+updateUiState state (Left _)       = state{ uiStatus = Error "Invalid state reached" }
 updateUiState state (Right (m, t)) =
   state
     { machine = m
     , currentTape = t
     , uiPrevious = Just state
-    , uiStatus = if status m == Stopped then UIFinished else UIProcessing
+    , uiStatus = if status m == Stopped then Finished else Processing
     }
 
 -- | Go back in history (if there's any)
@@ -137,9 +125,9 @@ drawTitle :: UIStatus -> Widget n
 drawTitle = hLimit 63 . withBorderStyle BS.unicodeBold . lateralBorders . drawTitle'
   where
     lateralBorders x = B.hBorder <+> str " " <+> x <+> str " " <+> B.hBorder
-    drawTitle' (UIError msg) = withAttr errorAttr    $ str msg
-    drawTitle' UIFinished    = withAttr finishedAttr $ str "You reached the end!"
-    drawTitle' UIProcessing  = withAttr titleAttr    $ str "Hasking Simulator"
+    drawTitle' (Error msg) = withAttr errorAttr    $ str msg
+    drawTitle' Finished    = withAttr finishedAttr $ str "You reached the end!"
+    drawTitle' Processing  = withAttr titleAttr    $ str "Hasking Simulator"
 
 -- | Draws the tape box
 drawTape :: UIState -> Widget Name
@@ -151,7 +139,7 @@ drawTape s =
     ]
   where
     normalTape = str . unwords
-    currentVal = (if uiStatus s == UIProcessing then withAttr blinkAttr else id) . str
+    currentVal = (if uiStatus s == Processing then withAttr blinkAttr else id) . str
     cursor c = str (replicate halfTapeString  ' ') <+> str c
 
     fixedList = map pretty . toFixedList 15 $ currentTape s
@@ -185,7 +173,6 @@ drawInstructions :: Widget Name
 drawInstructions = box 63 9 "Instructions" $ vBox
   [ str "n - Go to the next state, i.e. run a single instruction"
   , str "b - Go back in history (stays the same if there's none)"
-  , str "r - Reload the machine file"
   , str "q - Quit the program"
   ]
 
@@ -225,7 +212,7 @@ box width height title content =
 attributes :: AttrMap
 attributes = attrMap V.defAttr
   [ (errorAttr,    fg V.red   `V.withStyle` V.bold)
-  , (finishedAttr, fg V.blue  `V.withStyle` V.bold)
+  , (finishedAttr, fg V.green `V.withStyle` V.bold)
   , (titleAttr,    fg V.white `V.withStyle` V.bold)
   , (blinkAttr,    fg V.white `V.withStyle` V.blink)
   ]
