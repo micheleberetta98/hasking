@@ -18,7 +18,7 @@ import           UI
 
 main :: IO ()
 main = getOpts >>= \case
-  ShowVersion       -> hPutStrLn stderr "3.2.0" >> exitSuccess
+  ShowVersion       -> hPutStrLn stderr "4.0.0" >> exitSuccess
   Options cmd input -> readInput input >>= handleErrors . parseCode >>= executeCommand cmd
 
 executeCommand :: Command -> Code -> IO ()
