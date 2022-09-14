@@ -29,25 +29,20 @@ There are some tests that you can execute with `stack test` (currently borked).
 
 The options are as follow
 ```
-hasking [-i] [-s FILE] [-o FILE] [-t TAPE] [-v] [-h]
+hasking ((-v | --version) | COMMAND (--stdin | INPUT))
 ```
 
-| Short | Long            | Meaning                                                 |
-| ----- | --------------- | ------------------------------------------------------- |
-| `-v`  | `--version`     | Prints the version                                      |
-| `-h`  | `--help`        | Prints the help page                                    |
-| `-s`  | `--script`      | The file containing the instructions (default `stdin`)  |
-| `-o`  | `--output`      | The output file (default `stdout`)                      |
-| `-t`  | `--tape`        | The initial tape to use                                 |
-| `-i`  | `--interactive` | Run in interactive mode (terminal must support Unicode) |
+* `-v`/`--version` prints the version
+* `-h`/`--help` shows the help page
+* `INPUT` is the name of a Hasking file (use `--stdin` to read from standard input)
+* `COMMAND` is one between
+  * `run` to execute a Hasking file
+  * `sim` that runs a simulation of a machine (`-m`/`--machine`) on a tape (`-t`/`--tape`)
 
-The `--tape` provided will be added to any `simulate-on` in your file.
+## Simulation
 
-## Interactive mode
-
-When you are in the `--interactive` mode, only one tape will be used:
-* The tape specified via the `--tape` option if present
-* Otherwise, the first `simulate-on` definition in the file
+When you are in the simulation mode, you have to specify both what machine in the file to simulate
+and what tape to use (or just leave it empty).
 
 ## The language
 
@@ -60,20 +55,27 @@ The file you pass to the machine contains the machine definition. There are some
 
 Given these, there are only 3 types of lines: state transitions, control instructions and the initial tape value.
 
-You can see a complete example in `example.hsk`.
-
-The structure is as follows:
+You can see some examples in `examples`, such as:
 ```
-(machine
-  (initial <state>)
-  (finals (<state> <state> ...))
-  (rules (
-    (<state> <symbol> <state> <symbol> <direction>)
-    ...)))
+; This is a machine that transforms 0s into 1s
 
-(simulate-on (<symbol> ...))
-(simulate-on (<symbol> ...))
-...
+(machine zeros-to-ones
+  initial s       ; The initial state
+  finals (q)      ; The final states (here just 1)
+  rules
+    ((s 0 s 1 R)     ; If you encounter 0, write 1 and repeat till
+     (s . x . L)     ; the end, i.e. when you find the Blank. Now switch direction,
+     (x 1 x 1 L)     ; and keep everything the same, until
+     (x . q . R)))   ; you get back to the beginning
+
+(simulate zeros-to-ones (0 0 0 0))
+(simulate zeros-to-ones (0 0 1 0))
+```
+
+Which when run gives the output:
+```
+> zeros-to-ones on (0 0 0 0) : (1 1 1 1)
+! zeros-to-ones reached an invalid state: (s, 1)
 ```
 
 ### State transitions
@@ -86,13 +88,3 @@ State transitions are in the form of
 For example, `(s 1 q 0 R)` means
 * If the machine is in the state `s` and is reading `1` off the tape
 * Go to state `q`, write `0` onto the tape and then move `R`ight
-
-### Simulations
-
-You can add multiple (or no) tapes on which to simulate the machine.
-The instruction is `simulate-on` and *must follow the definition*.
-
-### Tapes
-
-The initial tape has to
-* Contain *at least* one symbol
