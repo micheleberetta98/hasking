@@ -12,6 +12,7 @@ import           Options.Applicative
 import           Options.Applicative.Help hiding (fullDesc)
 import           Parser                   (parseTape)
 import           Tape                     (Tape)
+import qualified Tape
 
 ------------------------------------------------
 -- Data types
@@ -80,6 +81,8 @@ pSimCommand = Simulate
       (  long "tape"
       <> short 't'
       <> metavar "TAPE"
+      <> value Tape.empty
+      <> showDefault
       <> help "The tape to use for the simulation")
   where
     tapeReader = eitherReader (toEither . parseTape . T.pack)

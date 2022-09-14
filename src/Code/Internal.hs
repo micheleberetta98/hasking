@@ -32,7 +32,7 @@ data CodeOutput
   deriving (Show, Eq)
 
 -----------------------------------------------
--- Interface
+-- Execution
 -----------------------------------------------
 
 execute :: Code -> [CodeOutput]
