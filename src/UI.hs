@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module UI (runUiWith) where
 
 import           Brick                      hiding (Direction)
@@ -66,7 +64,7 @@ app = App
   { appDraw = drawUI
   , appChooseCursor = neverShowCursor
   , appHandleEvent = handleEvent
-  , appStartEvent = return
+  , appStartEvent = return ()
   , appAttrMap = const attributes
   }
 
@@ -75,12 +73,12 @@ app = App
 ------------------------------------------------
 
 -- | Handles a generic event
-handleEvent :: UIState -> BrickEvent Name CustomEvent -> EventM Name (Next UIState)
-handleEvent s (VtyEvent (V.EvKey (V.KChar 'n') [])) = continue (executeStep s)
-handleEvent s (VtyEvent (V.EvKey (V.KChar 'b') [])) = continue (goBack s)
-handleEvent s (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt s
-handleEvent s (VtyEvent (V.EvKey V.KEsc []))        = halt s
-handleEvent s _                                     = continue s
+handleEvent :: BrickEvent Name CustomEvent -> EventM Name UIState ()
+handleEvent (VtyEvent (V.EvKey (V.KChar 'n') [])) = modify executeStep
+handleEvent (VtyEvent (V.EvKey (V.KChar 'b') [])) = modify goBack
+handleEvent (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt
+handleEvent (VtyEvent (V.EvKey V.KEsc []))        = halt
+handleEvent _                                     = continueWithoutRedraw
 
 ------------------------------------------------
 -- Status update
@@ -218,13 +216,13 @@ attributes = attrMap V.defAttr
   ]
 
 errorAttr :: AttrName
-errorAttr = "UIerrorAttr"
+errorAttr = attrName "UIerrorAttr"
 
 finishedAttr :: AttrName
-finishedAttr = "UIfinishedAttr"
+finishedAttr = attrName "UIfinishedAttr"
 
 titleAttr :: AttrName
-titleAttr = "titleAttr"
+titleAttr = attrName "titleAttr"
 
 blinkAttr :: AttrName
-blinkAttr = "blinkAttr"
+blinkAttr = attrName "blinkAttr"
