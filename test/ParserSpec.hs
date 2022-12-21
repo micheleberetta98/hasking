@@ -43,8 +43,8 @@ parserTests = describe "Parser" $ do
   it "parses tape symbols" $ do
     symbol `over` "." `shouldBe` Right Blank
     symbol `over` "[" `shouldSatisfy` isLeft
-    symbol `over` "#" `shouldBe` Right (Symbol "#")
-    symbol `over` "1" `shouldBe` Right (Symbol "1")
+    symbol `over` "#" `shouldBe` Right (Symbol '#')
+    symbol `over` "1" `shouldBe` Right (Symbol '1')
 
   it "parses whole tapes" $ do
     pretty <$> (tape `over` "(0 1 0 1)") `shouldBe` Right "(0 1 0 1)"
@@ -54,14 +54,14 @@ parserTests = describe "Parser" $ do
     state `over` "1a" `shouldSatisfy` isLeft
 
   it "parses simulations (i.e. tapes)" $ do
-    simulate `over` "(simulate machine (0 1 r #))" `shouldBe` Right (Simulation "machine" (fromList [Symbol "0", Symbol "1", Symbol "r", Symbol "#"]))
+    simulate `over` "(simulate machine (0 1 r #))" `shouldBe` Right (Simulation "machine" (fromList [Symbol '0', Symbol '1', Symbol 'r', Symbol '#']))
     simulate `over` "(simulate machine 0 1 r #)" `shouldSatisfy` isLeft
     simulate `over` "(simulate (0 1 r #))" `shouldSatisfy` isLeft
     simulate `over` "(simulate ([ ]))" `shouldSatisfy` isLeft
 
   it "parses rules" $ do
-    rule `over` "(s  0 s  1 R)" `shouldBe` Right (State "s",  Symbol "0", State "s",  Symbol "1", R)
-    rule `over` "(q0 # q1 . S)" `shouldBe` Right (State "q0", Symbol "#", State "q1", Blank,      S)
+    rule `over` "(s  0 s  1 R)" `shouldBe` Right (State "s",  Symbol '0', State "s",  Symbol '1', R)
+    rule `over` "(q0 # q1 . S)" `shouldBe` Right (State "q0", Symbol '#', State "q1", Blank,      S)
     rule `over` "(s 0 s 1 T)" `shouldSatisfy` isLeft
     rule `over` "(s 0 1 s R)" `shouldSatisfy` isLeft
     rule `over` "(0 0 0 0 S)" `shouldSatisfy` isLeft
@@ -81,9 +81,9 @@ parserTests = describe "Parser" $ do
                      (State "s")
                      [State "f"]
                      ( buildTransitions
-                        [ (State "s", Symbol "0", State "s", Symbol "1", R)
+                        [ (State "s", Symbol '0', State "s", Symbol '1', R)
                         , (State "s", Blank     , State "x", Blank     , L)
-                        , (State "x", Symbol "1", State "x", Symbol "1", L)
+                        , (State "x", Symbol '1', State "x", Symbol '1', L)
                         , (State "x", Blank     , State "f", Blank     , R)
                         ])
                     (State "s")
@@ -107,9 +107,9 @@ parserTests = describe "Parser" $ do
                      (State "s")
                      [State "f"]
                      ( buildTransitions
-                        [ (State "s", Symbol "0", State "s", Symbol "1", R)
+                        [ (State "s", Symbol '0', State "s", Symbol '1', R)
                         , (State "s", Blank     , State "x", Blank     , L)
-                        , (State "x", Symbol "1", State "x", Symbol "1", L)
+                        , (State "x", Symbol '1', State "x", Symbol '1', L)
                         , (State "x", Blank     , State "f", Blank     , R)
                         ])
                     (State "s")
@@ -140,14 +140,14 @@ parserTests = describe "Parser" $ do
         expectedMachine = TuringMachine
                      (State "s")
                      [State "q"]
-                     (buildTransitions [(State "s", Symbol "0", State "s", Symbol "1", R)])
+                     (buildTransitions [(State "s", Symbol '0', State "s", Symbol '1', R)])
                     (State "s")
                     Running
 
     (code `over` contents1) `shouldBe` Right
                                         [ Definition "m1" expectedMachine
-                                        , Simulation "m1" (fromList [Symbol "0"])
+                                        , Simulation "m1" (fromList [Symbol '0'])
                                         , Definition "m2" expectedMachine
-                                        , Simulation "m2" (fromList [Symbol "1"])
+                                        , Simulation "m2" (fromList [Symbol '1'])
                                         ]
     (code `over` contents1) `shouldBe` (code `over` contents2)

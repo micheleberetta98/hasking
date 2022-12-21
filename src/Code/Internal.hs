@@ -6,8 +6,8 @@ import           Data.Map            (Map)
 import qualified Data.Map            as M
 import           Pretty
 import           Tape                (Tape)
-import           TuringMachine       (TuringMachine)
 import qualified TuringMachine       as TM
+import           TuringMachine       (TuringMachine)
 
 -----------------------------------------------
 -- Types
@@ -16,19 +16,19 @@ import qualified TuringMachine       as TM
 type Code = [Expression]
 
 data Expression
-  = Definition { defName :: MachineName, defMachine :: TuringMachine String String }
-  | Simulation { simName :: MachineName, simTape :: Tape String }
+  = Definition { defName :: MachineName, defMachine :: TuringMachine String }
+  | Simulation { simName :: MachineName, simTape :: Tape }
   deriving (Show, Eq)
 
 type MachineName = String
 
-type Env = Map MachineName (TuringMachine String String)
+type Env = Map MachineName (TuringMachine String)
 
 data CodeOutput
   = Empty
-  | TapeResult MachineName (Tape String) (Tape String)
+  | TapeResult MachineName Tape Tape
   | MachineNotDefined MachineName
-  | InvalidState MachineName (TM.From String String)
+  | InvalidState MachineName (TM.From String)
   deriving (Show, Eq)
 
 -----------------------------------------------
@@ -43,8 +43,8 @@ executeExpression (Definition name machine) = modify' (M.insert name machine) >>
 executeExpression (Simulation name tape) = gets (executeMachine name tape . M.lookup name)
 
 executeMachine :: MachineName
-                  -> Tape String
-                  -> Maybe (TuringMachine String String)
+                  -> Tape
+                  -> Maybe (TuringMachine String)
                   -> CodeOutput
 executeMachine name _ Nothing = MachineNotDefined name
 executeMachine name tape (Just m) = toCodeOutput (TM.runMachine m tape)
@@ -56,7 +56,7 @@ executeMachine name tape (Just m) = toCodeOutput (TM.runMachine m tape)
 -- Utilities
 -----------------------------------------------
 
-getDef :: MachineName -> Code -> Maybe (TuringMachine String String)
+getDef :: MachineName -> Code -> Maybe (TuringMachine String)
 getDef name code = defMachine <$> find (isDefinitionOf name) code
 
 isDefinitionOf :: MachineName -> Expression -> Bool

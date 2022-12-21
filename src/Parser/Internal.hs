@@ -7,8 +7,8 @@ import           Control.Applicative.Permutations
 import           Data.Char
 import           Data.Text                        (Text)
 import           Data.Void
-import           Tape                             (Direction, Symbol, Tape)
 import qualified Tape                             as T
+import           Tape                             (Direction, Symbol, Tape)
 import           Text.Megaparsec                  hiding (State)
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer       as L
@@ -46,7 +46,7 @@ definition = def "machine" (Definition <$> machineName <*> machine)
         <*> toPermutation (buildTransitions <$> defs' "rules" rule)
 
 -- | Parses a single "rule" in the form @(state symbol state symbol direction)@
-rule :: Parser (Rule String String)
+rule :: Parser (Rule String)
 rule = lexeme . parens $ (,,,,) <$> state <*> symbol <*> state <*> symbol <*> direction
 
 -- | Parses a simulation of a machine on a tape
@@ -59,15 +59,15 @@ state = State <$> lexeme identifier <?> "state"
   where identifier = (:) <$> satisfy isAlpha <*> many (satisfy isAlphaNum)
 
 -- | Parses a tape
-tape :: Parser (Tape String)
+tape :: Parser Tape
 tape = T.fromList <$> parens (many symbol) <?> "tape (list of symbols)"
 
 -- | Parses a symbol
-symbol :: Parser (Symbol String)
+symbol :: Parser Symbol
 symbol = lexeme (blank <|> symbolValue) <?> "symbol"
   where
     blank = T.Blank <$ string "."
-    symbolValue = T.Symbol <$> some (noneOf [' ', '(', ')', '[', ']', '{', '}', ';'])
+    symbolValue = T.Symbol <$> noneOf [' ', '(', ')', '[', ']', '{', '}', ';']
 
 -- | Parses a @Direction@
 direction :: Parser Direction

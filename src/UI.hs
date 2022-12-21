@@ -17,14 +17,14 @@ import           TuringMachine              hiding (machine)
 -- Types
 ------------------------------------------------
 
-type TM = TuringMachine String String
+type TM = TuringMachine String
 
 data UIStatus = Processing | Finished | Error String
   deriving (Show, Eq)
 
 data UIState = UIState
   { machine     :: TM
-  , currentTape :: Tape String
+  , currentTape :: Tape
   , uiPrevious  :: Maybe UIState
   , uiStatus    :: UIStatus
   }
@@ -48,7 +48,7 @@ instance Pretty a => Pretty (Visualized a) where
 ------------------------------------------------
 
 -- | Functions that runs the app with some defaults
-runUiWith :: TM -> Tape String -> IO UIState
+runUiWith :: TM -> Tape -> IO UIState
 runUiWith m t = do
   defaultMain app $
     UIState
@@ -90,7 +90,7 @@ executeStep s@(UIState m t _ Processing) = updateUiState s (step m t)
 executeStep s                            = s
 
 -- | Updates the UI state based on the result of a single @step@
-updateUiState :: UIState -> Either (From String String) (TM, Tape String) -> UIState
+updateUiState :: UIState -> Either (From String) (TM, Tape) -> UIState
 updateUiState state (Left _)       = state{ uiStatus = Error "Invalid state reached" }
 updateUiState state (Right (m, t)) =
   state
@@ -178,11 +178,11 @@ drawInstructions = box 63 9 "Instructions" $ vBox
 -- Utilities
 ------------------------------------------------
 
-currentFrom :: UIState -> (State String, Symbol String)
+currentFrom :: UIState -> (State String, Symbol)
 currentFrom s = (current $ machine s, value $ currentTape s)
 
 -- | Draws a machine box displaying @State@, @Symbol@ and @Direction@
-machineBox :: String -> (Visualized (State String), Visualized (Symbol String), Visualized Direction ) -> Widget Name
+machineBox :: String -> (Visualized (State String), Visualized Symbol, Visualized Direction ) -> Widget Name
 machineBox title (state, symbol, dir) =  box 21 9 title $ vBox
   [ str $ prepend "State:  " state
   , str $ prepend "Symbol: " symbol

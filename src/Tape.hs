@@ -11,21 +11,22 @@ module Tape
   , write
   ) where
 
-import           Pretty (Pretty (..))
+import           Data.Function (on)
+import           Pretty        (Pretty (..))
 
 -----------------------------------------------
 -- Types
 -----------------------------------------------
 
 -- | Represents a Symbol, which can be the control symbol @Blank@ or user defined data
-data Symbol a = Blank | Symbol a
+data Symbol = Blank | Symbol Char
   deriving (Show, Eq)
 
 -- | An infinite Tape of Symbols of type @a@, which can be moved either *left* or *right*
-data Tape a = Cell
-  { value :: Symbol a
-  , left  :: Tape a
-  , right :: Tape a
+data Tape = Cell
+  { value :: Symbol
+  , left  :: Tape
+  , right :: Tape
   }
 
 -- | Represents movement (@L@ = left, @R@ = right, @S@ = stay)
@@ -36,55 +37,55 @@ data Direction = L | R | S
 -- Instances
 -----------------------------------------------
 
-instance (Pretty s) => Pretty (Symbol s) where
-  pretty (Symbol s) = pretty s
+instance Pretty Symbol where
+  pretty (Symbol s) = [s]
   pretty Blank      = "."
 
-instance (Ord s) => Ord (Symbol s) where
+instance Ord Symbol where
   compare Blank Blank             = EQ
   compare Blank _                 = LT
   compare _ Blank                 = GT
   compare (Symbol s1) (Symbol s2) = compare s1 s2
 
-instance (Pretty a) => Pretty (Tape a) where
+instance Pretty Tape where
   pretty t = "(" <> pretty (toList t) <> ")"
 
 instance Pretty Direction where
   pretty = show
 
-instance (Show a, Pretty a) => Show (Tape a) where
+instance Show Tape where
   show = pretty
 
-instance (Eq a, Show a, Pretty a) => Eq (Tape a) where
-  t1 == t2 = show t1 == show t2
+instance Eq Tape where
+  (==) = (==) `on` toList
 
 -----------------------------------------------
 -- Tape conversions
 -----------------------------------------------
 
 -- | A tape consisting only of @Blank@
-empty :: Tape a
+empty :: Tape
 empty = Cell Blank empty empty
 
 -- | Converts a list into a @Tape@
-fromList :: [Symbol a] -> Tape a
+fromList :: [Symbol] -> Tape
 fromList xs = h
   where h = fromList' (updateRight h empty) xs
 
-fromList' :: Tape a -> [Symbol a] -> Tape a
+fromList' :: Tape -> [Symbol] -> Tape
 fromList' l []     = write Blank l
 fromList' l (x:xs) = h
   where h = Cell{ value = x, left = updateRight h l, right = fromList' h xs }
 
 -- | Converts a @Tape@ into a list (it only traverses the tape to the right)
-toList :: Tape a -> [Symbol a]
+toList :: Tape -> [Symbol]
 toList (Cell Blank _ _) = []
 toList (Cell x _ next)  = x : toList next
 
 -- | Returns a fixed number of symbols in a tape, in particular
 -- the @n@ symbols on the left and the @n@ symbols on the right
 -- from the current position
-toFixedList :: (Pretty a) => Int -> Tape a -> [Symbol a]
+toFixedList :: Int -> Tape -> [Symbol]
 toFixedList n tape
   | n < 0     = []
   | n == 0    = [value tape]
@@ -103,13 +104,13 @@ toFixedList n tape
 -----------------------------------------------
 
 -- | Move the @Tape@ in a specified direction
-move :: Direction -> Tape a -> Tape a
+move :: Direction -> Tape -> Tape
 move S = id
 move L = left
 move R = right
 
 -- | Writes a symbol to the @Tape@
-write :: Symbol a -> Tape a -> Tape a
+write :: Symbol -> Tape -> Tape
 write symbol (Cell _ l r) = h
   where
     h = Cell symbol prev next
@@ -117,14 +118,14 @@ write symbol (Cell _ l r) = h
     next = updateLeft h r
 
 -- | Updates the left reference (recursively) in a tape
-updateLeft :: Tape a -> Tape a -> Tape a
+updateLeft :: Tape -> Tape -> Tape
 updateLeft to (Cell s _ r) = h
   where
     h = Cell s to next
     next = updateLeft h r
 
 -- | Updates the right reference (recursively) in a tape
-updateRight :: Tape a -> Tape a -> Tape a
+updateRight :: Tape -> Tape -> Tape
 updateRight to (Cell s l _) = h
   where
     h = Cell s prev to

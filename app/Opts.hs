@@ -11,8 +11,8 @@ import qualified Data.Text                as T
 import           Options.Applicative
 import           Options.Applicative.Help hiding (fullDesc)
 import           Parser                   (parseTape)
-import           Tape                     (Tape)
 import qualified Tape
+import           Tape                     (Tape)
 
 ------------------------------------------------
 -- Data types
@@ -31,7 +31,7 @@ data Command
   = Run
   | Simulate
     { simMachineName :: String
-    , simTape        :: Tape String
+    , simTape        :: Tape
     }
   deriving (Show)
 

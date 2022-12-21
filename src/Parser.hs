@@ -14,5 +14,5 @@ import           Text.Megaparsec
 parseCode :: Text -> Either (ParseErrorBundle Text Data.Void.Void) Code
 parseCode = parse code ""
 
-parseTape :: Text -> Either (ParseErrorBundle Text Void) (Tape String)
+parseTape :: Text -> Either (ParseErrorBundle Text Void) Tape
 parseTape = parse tape ""

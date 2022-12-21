@@ -17,26 +17,26 @@ data Status = Running | Stopped deriving (Show, Eq)
 newtype State s = State { getState :: s } deriving (Show)
 
 -- | Represents a state in which the machine can be found, along with the read symbol from the tape
-type From s a = (State s, Symbol a)
+type From s = (State s, Symbol)
 
 -- | Represents the new state of the machine after a transaction, the symbol to write and the direction to move to
-type To s a = (State s, Symbol a, Direction)
+type To s = (State s, Symbol, Direction)
 
 -- | All of the transitions
-type Transitions s a = Map (From s a) (To s a)
+type Transitions s = Map (From s) (To s)
 
 -- | The executable @TuringMachine@
-data TuringMachine s a = TuringMachine
+data TuringMachine s = TuringMachine
   { initial     :: State s
   , finals      :: [State s]
-  , transitions :: Transitions s a
+  , transitions :: Transitions s
   , current     :: State s
   , status      :: Status
   }
   deriving (Show, Eq)
 
 -- | A simple utility for rules
-type Rule s a = (State s, Symbol a, State s, Symbol a, Direction)
+type Rule s = (State s, Symbol, State s, Symbol, Direction)
 
 ------------------------------------------------
 -- Instances
@@ -55,7 +55,7 @@ instance (Pretty s) => Pretty (State s) where
 -- Construction
 ------------------------------------------------
 
-mkMachine :: State s -> [State s] -> Transitions s a -> TuringMachine s a
+mkMachine :: State s -> [State s] -> Transitions s -> TuringMachine s
 mkMachine from finalStates ts = TuringMachine
   { initial = from
   , finals = finalStates
@@ -70,14 +70,14 @@ mkMachine from finalStates ts = TuringMachine
 
 -- | Executes a @TuringMachine@ with the specified @Tape@
 -- It returns @Left (state, symbol)@ if it ends up in an undefined state, or the resulting @Right (TuringMachine, Tape)@
-runMachine :: (Ord s, Ord a) => TuringMachine s a -> Tape a -> Either (From s a) (TuringMachine s a, Tape a)
+runMachine :: (Ord s) => TuringMachine s -> Tape -> Either (From s) (TuringMachine s, Tape)
 runMachine tm t
   | status tm == Stopped = Right (tm, t)
   | otherwise            = step tm t >>= uncurry runMachine
 
 -- | Given a particular @TuringMachine@, it runs a transition giving maybe a new @(TuringMachine, Tape)@
--- If the transition has not been defined, it returns @Left (From s a)@
-step :: (Ord s, Ord a) => TuringMachine s a -> Tape a -> Either (From s a) (TuringMachine s a, Tape a)
+-- If the transition has not been defined, it returns @Left (From s)@
+step :: (Ord s) => TuringMachine s -> Tape -> Either (From s) (TuringMachine s, Tape)
 step tm@TuringMachine{ status = Stopped } t = Right (tm, t)
 step tm t                                   =
   let c = current tm
@@ -89,7 +89,7 @@ step tm t                                   =
       in Right (tm', move dir $ write out t)
 
 -- | Lookups a single transition from a @Transitions s a@
-transition :: (Ord s, Ord a) => From s a -> Transitions s a -> Maybe (To s a)
+transition :: (Ord s) => From s -> Transitions s -> Maybe (To s)
 transition from ts = ts !? from
 
 ------------------------------------------------
@@ -97,7 +97,7 @@ transition from ts = ts !? from
 ------------------------------------------------
 
 -- -- | Builds the transition Map from a list of @Rule@s
-buildTransitions :: [Rule String String] -> Transitions String String
+buildTransitions :: [Rule String] -> Transitions String
 buildTransitions = M.fromList . map formatRule
   where
     formatRule (fromState, fromSymbol, toState, toSymbol, dir) = ((fromState, fromSymbol), (toState, toSymbol, dir))
