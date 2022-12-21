@@ -46,44 +46,35 @@ and what tape to use (or just leave it empty).
 
 ## The language
 
-The file you pass to the machine contains the machine definition. There are some rules:
-* The input and machine alphabet are comprised of ***symbols***, which can be letters, numbers or any characters but one of `; ()[]{}`, and the special *blank symbol* is identified by `.` (dot)
-* The ***state*** of the machine is a series of alphanumeric characters that starts with a letter
-* The ***direction*** is one of `L`, `R` or `S` (left, right or stay)
-* The initial tape is comprised of symbols (even blank ones)
-* ***Comments*** are everything that follows a `;`
+In any single file, you can define both *machines* and *simulations*: machines have a name and some more properties, while simulations specify
+a machine and a tape that is feed into it.
 
-Given these, there are only 3 types of lines: state transitions, control instructions and the initial tape value.
-
-You can see some examples in `examples`, such as:
+The general form is:
 ```
-; This is a machine that transforms 0s into 1s
+; Comments are what follows a ;
 
-(machine zeros-to-ones
-  initial s       ; The initial state
-  finals (q)      ; The final states (here just 1)
-  rules
-    ((s 0 s 1 R)     ; If you encounter 0, write 1 and repeat till
-     (s . x . L)     ; the end, i.e. when you find the Blank. Now switch direction,
-     (x 1 x 1 L)     ; and keep everything the same, until
-     (x . q . R)))   ; you get back to the beginning
+(machine <name>
+  initial <initial state>
+  finals (<list of final states>)
+  rules (<list of rules>))
 
-(simulate zeros-to-ones (0 0 0 0))
-(simulate zeros-to-ones (0 0 1 0))
+(simulation <machine name> (<tape symbols>))
 ```
 
-Which when run gives the output:
-```
-> zeros-to-ones on (0 0 0 0) : (1 1 1 1)
-! zeros-to-ones reached an invalid state: (s, 1)
-```
+Symbols are any single char, excluding one of `; .[]()`, and `.` is the special blank symbol.
+State names are just like variables in other languages: alphanumeric strings that start with a letter.
 
-### State transitions
+You can see some examples in `examples`.
+
+### Rules
 
 State transitions are in the form of
+
 ```
 (<state> <symbol> <state> <symbol> <direction>)
 ```
+
+Where `direction` is one of `L` (go left), `R` (go right) or `S` (stay.)
 
 For example, `(s 1 q 0 R)` means
 * If the machine is in the state `s` and is reading `1` off the tape
