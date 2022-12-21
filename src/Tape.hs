@@ -18,16 +18,19 @@ import           Pretty        (Pretty (..))
 -- Types
 -----------------------------------------------
 
+
+-- | An infinite Tape of Symbols of type @a@, which can be moved either *left* or *right*
+data Tape = Tape
+  { prev  :: Infinite Symbol
+  , value :: Symbol
+  , next  :: Infinite Symbol
+  }
+
+data Infinite a = a :| Infinite a
+
 -- | Represents a Symbol, which can be the control symbol @Blank@ or user defined data
 data Symbol = Blank | Symbol Char
   deriving (Show, Eq)
-
--- | An infinite Tape of Symbols of type @a@, which can be moved either *left* or *right*
-data Tape = Cell
-  { value :: Symbol
-  , left  :: Tape
-  , right :: Tape
-  }
 
 -- | Represents movement (@L@ = left, @R@ = right, @S@ = stay)
 data Direction = L | R | S
@@ -65,39 +68,29 @@ instance Eq Tape where
 
 -- | A tape consisting only of @Blank@
 empty :: Tape
-empty = Cell Blank empty empty
+empty = Tape (infinitely Blank) Blank (infinitely Blank)
 
 -- | Converts a list into a @Tape@
 fromList :: [Symbol] -> Tape
-fromList xs = h
-  where h = fromList' (updateRight h empty) xs
-
-fromList' :: Tape -> [Symbol] -> Tape
-fromList' l []     = write Blank l
-fromList' l (x:xs) = h
-  where h = Cell{ value = x, left = updateRight h l, right = fromList' h xs }
+fromList []     = empty
+fromList (x:xs) = Tape (infinitely Blank) x (listToInfinite (xs ++ repeat Blank))
 
 -- | Converts a @Tape@ into a list (it only traverses the tape to the right)
 toList :: Tape -> [Symbol]
-toList (Cell Blank _ _) = []
-toList (Cell x _ next)  = x : toList next
+toList (Tape _ Blank _) = []
+toList (Tape _ x xs)    = x : takeWhile (/= Blank) (infiniteToList xs)
 
 -- | Returns a fixed number of symbols in a tape, in particular
 -- the @n@ symbols on the left and the @n@ symbols on the right
 -- from the current position
 toFixedList :: Int -> Tape -> [Symbol]
-toFixedList n tape
+toFixedList n (Tape l x r)
   | n < 0     = []
-  | n == 0    = [value tape]
-  | otherwise = leftList ++ [value tape] ++ rightList
+  | n == 0    = [x]
+  | otherwise = leftList ++ [x] ++ rightList
   where
-    leftList = reverse $ toFixedList' n left tape
-    rightList = toFixedList' n right tape
-
-    toFixedList' 0 _ _ = []
-    toFixedList' m k t =
-      let t' = k t
-      in value t' : toFixedList' (m-1) k t'
+    leftList = reverse $ take n $ infiniteToList l
+    rightList = take n $ infiniteToList r
 
 -----------------------------------------------
 -- Tape actions
@@ -105,28 +98,24 @@ toFixedList n tape
 
 -- | Move the @Tape@ in a specified direction
 move :: Direction -> Tape -> Tape
-move S = id
-move L = left
-move R = right
+move S t                     = t
+move L (Tape (l :| ls) x rs) = Tape ls l (x :| rs)
+move R (Tape ls x (r :| rs)) = Tape (x :| ls) r rs
 
 -- | Writes a symbol to the @Tape@
 write :: Symbol -> Tape -> Tape
-write symbol (Cell _ l r) = h
-  where
-    h = Cell symbol prev next
-    prev = updateRight h l
-    next = updateLeft h r
+write symbol (Tape l _ r) = Tape l symbol r
 
--- | Updates the left reference (recursively) in a tape
-updateLeft :: Tape -> Tape -> Tape
-updateLeft to (Cell s _ r) = h
-  where
-    h = Cell s to next
-    next = updateLeft h r
 
--- | Updates the right reference (recursively) in a tape
-updateRight :: Tape -> Tape -> Tape
-updateRight to (Cell s l _) = h
-  where
-    h = Cell s prev to
-    prev = updateRight h l
+-----------------------------------------------
+-- Infinite utils
+-----------------------------------------------
+
+infinitely :: a -> Infinite a
+infinitely x = x :| infinitely x
+
+listToInfinite :: [a] -> Infinite a
+listToInfinite (x:xs) = x :| listToInfinite xs
+
+infiniteToList :: Infinite a -> [a]
+infiniteToList (x :| xs) = x : infiniteToList xs
