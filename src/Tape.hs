@@ -73,7 +73,7 @@ empty = Tape (infinitely Blank) Blank (infinitely Blank)
 -- | Converts a list into a @Tape@
 fromList :: [Symbol] -> Tape
 fromList []     = empty
-fromList (x:xs) = Tape (infinitely Blank) x (listToInfinite (xs ++ repeat Blank))
+fromList (x:xs) = Tape (infinitely Blank) x (listToInfinite Blank xs)
 
 -- | Converts a @Tape@ into a list (it only traverses the tape to the right)
 toList :: Tape -> [Symbol]
@@ -114,8 +114,8 @@ write symbol (Tape l _ r) = Tape l symbol r
 infinitely :: a -> Infinite a
 infinitely x = x :| infinitely x
 
-listToInfinite :: [a] -> Infinite a
-listToInfinite (x:xs) = x :| listToInfinite xs
+listToInfinite :: a -> [a] -> Infinite a
+listToInfinite def = foldr (:|) (infinitely def)
 
 infiniteToList :: Infinite a -> [a]
 infiniteToList (x :| xs) = x : infiniteToList xs
