@@ -47,7 +47,7 @@ parserTests = describe "Parser" $ do
     symbol `over` "1" `shouldBe` Right (Symbol '1')
 
   it "parses whole tapes" $ do
-    pretty <$> (tape `over` "(0 1 0 1)") `shouldBe` Right "(0 1 0 1)"
+    toList <$> (tape `over` "(0 1 0 1)") `shouldBe` Right (map Symbol "0101")
 
   it "parses states" $ do
     state `over` "q0" `shouldBe` Right (State "q0")

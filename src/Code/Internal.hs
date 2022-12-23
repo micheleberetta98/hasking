@@ -29,14 +29,15 @@ data CodeOutput
   | TapeResult MachineName Tape Tape
   | MachineNotDefined MachineName
   | InvalidState MachineName (TM.From String)
-  deriving (Show, Eq)
 
 -----------------------------------------------
 -- Execution
 -----------------------------------------------
 
 execute :: Code -> [CodeOutput]
-execute = filter (/= Empty) . flip evalState M.empty . mapM executeExpression
+execute = filter (not . isEmpty) . flip evalState M.empty . mapM executeExpression
+  where isEmpty Empty = True
+        isEmpty _     = False
 
 executeExpression :: Expression -> State Env CodeOutput
 executeExpression (Definition name machine) = modify' (M.insert name machine) >> pure Empty

@@ -51,16 +51,19 @@ instance Ord Symbol where
   compare (Symbol s1) (Symbol s2) = compare s1 s2
 
 instance Pretty Tape where
-  pretty t = "(" <> pretty (toList t) <> ")"
+  pretty t = "(" <> pretty (toFixedList 5 t) <> ")"
 
 instance Pretty Direction where
   pretty = show
 
+-- This instances have no actual meaning
+-- they should be used only for testing
+
 instance Show Tape where
-  show = pretty
+  show = show . toList
 
 instance Eq Tape where
-  (==) = (==) `on` toList
+  (==) = (==) `on` toFixedList 10
 
 -----------------------------------------------
 -- Tape conversions
